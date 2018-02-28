@@ -554,10 +554,15 @@ protected void selectVideoTracks(Integer[] videoRendererIndices, RendererCapabil
                                  int[][][] formatsupport, TrackSelection[] videoRendererSelections, Parameters params){
     ArrayList<Integer[]> formatSupports = new ArrayList<>();
     TrackGroupArray groupArray = groups[0];
-
+    Log.d("JOSH","tracks available: " + groupArray.length);
     for (int i = 0 ;i < videoRendererIndices.length; i++){
+        Log.d("JOSH","lengths: " + groupArray.get(i).length);
         TrackGroup group = groupArray.get(i);
-        videoRendererSelections[videoRendererIndices[i]] = new FixedTrackSelection(group, 0);
+        int trackToPlay = 0;
+        if (i > 1){
+          trackToPlay = 0;
+        }
+        videoRendererSelections[videoRendererIndices[i]] = new FixedTrackSelection(group, trackToPlay);
     }
 
 }

@@ -10,6 +10,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -54,6 +56,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 
     int holdersFound = 0;
 
+    TextView txtIpAddress;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,7 +67,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
         rl3 = (RelativeLayout)findViewById(R.id.container3);
         rl4 = (RelativeLayout)findViewById(R.id.container4);
 
-
+        txtIpAddress = (TextView)findViewById(R.id.txtIpAddress);
 
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT,RelativeLayout.LayoutParams.FILL_PARENT);
 
@@ -90,15 +93,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     }
 
     public void onClick(View v){
-        TrackSelectionArray tsa = player.getCurrentTrackSelections();
-        TrackSelection[] tss = tsa.getAll();
-        Log.d("JOSH","TS SIZE: " + tss.length);
-        for (TrackSelection ts : tss){
-            if (ts != null) {
-                Log.d("JOSH", "TS: " + ts.toString());
-                Log.d("JOSH", "TS: " + ts.getSelectedFormat());
-            }
-        }
+        createAllSurfaces();
     }
     public void createAllSurfaces(){
 
@@ -110,7 +105,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
                 new VrTileTrackSelector();
 // 2. Create the player
         vrf = new VrRenderersFactory2(this,null);
-        vrf.setNumberOfRenderers(4,rendererListener);
+        vrf.setNumberOfRenderers(1,rendererListener);
         player = ExoPlayerFactory.newSimpleInstance(vrf, trackSelector);
 
         // Measures bandwidth during playback. Can be null if not required.
@@ -121,8 +116,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 // Produces Extractor instances for parsing the media data.
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
 // This is the MediaSource representing the media to be played.
-        Uri uri =  Uri.parse( "https://storage.googleapis.com/vr-paradrop/vr-video1/one.mpd" );
-
+//        Uri uri =  Uri.parse( "http://yt-dash-mse-test.commondatastorage.googleapis.com/media/car-20120827-manifest.mpd" );
+        Uri uri =  Uri.parse( txtIpAddress.getText().toString() );
         DashMediaSource videoSource = new DashMediaSource(uri, dataSourceFactory,
                 new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
         DashMediaSource videoSource2 = new DashMediaSource(uri, dataSourceFactory,
@@ -132,7 +127,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
         DashMediaSource videoSource4 = new DashMediaSource(uri, dataSourceFactory,
                 new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
 
-//        MediaSource videoSource = new DashMediaSource(uri,
+//        MediaSource videoSource = new ExtractorMediaSource(uri,
 //                dataSourceFactory, extractorsFactory, null, null);
 //        MediaSource videoSource2 = new ExtractorMediaSource(uri,
 //                dataSourceFactory, extractorsFactory, null, null);
@@ -176,8 +171,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 // Produces Extractor instances for parsing the media data.
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
 // This is the MediaSource representing the media to be played.
-        Uri uri =  Uri.parse( "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4" );
-
+//        Uri uri =  Uri.parse( "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4" );
+        Uri uri =  Uri.parse( "http://yt-dash-mse-test.commondatastorage.googleapis.com/media/car-20120827-manifest.mpd" );
         MediaSource videoSource = new ExtractorMediaSource(uri,
                 dataSourceFactory, extractorsFactory, null, null);
 // Prepare the player with the source.
@@ -215,7 +210,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
         }
         if (holdersFound == 4){
             Log.d("JOSH","All surfaces prepared!");
-            createAllSurfaces();
+            Toast.makeText(this,"READY!", Toast.LENGTH_SHORT).show();
+//            createAllSurfaces();
         }
     }
 
