@@ -121,15 +121,18 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 // Produces Extractor instances for parsing the media data.
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
 // This is the MediaSource representing the media to be played.
-        Uri uri =  Uri.parse( "https://storage.googleapis.com/vr-paradrop/vr-video1/one.mpd" );
+        Uri uri1 =  Uri.parse( "https://storage.googleapis.com/vr-paradrop/fusion-test/dash-tile-test/VIDEO_0065-tile1.mpd" );
+        Uri uri2 =  Uri.parse( "https://storage.googleapis.com/vr-paradrop/fusion-test/dash-tile-test/VIDEO_0065-tile2.mpd" );
+        Uri uri3 =  Uri.parse( "https://storage.googleapis.com/vr-paradrop/fusion-test/dash-tile-test/VIDEO_0065-tile5.mpd" );
+        Uri uri4 =  Uri.parse( "https://storage.googleapis.com/vr-paradrop/fusion-test/dash-tile-test/VIDEO_0065-tile6.mpd" );
 
-        DashMediaSource videoSource = new DashMediaSource(uri, dataSourceFactory,
+        DashMediaSource videoSource = new DashMediaSource(uri1, dataSourceFactory,
                 new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource2 = new DashMediaSource(uri, dataSourceFactory,
+        DashMediaSource videoSource2 = new DashMediaSource(uri2, dataSourceFactory,
                 new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource3 = new DashMediaSource(uri, dataSourceFactory,
+        DashMediaSource videoSource3 = new DashMediaSource(uri3, dataSourceFactory,
                 new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource4 = new DashMediaSource(uri, dataSourceFactory,
+        DashMediaSource videoSource4 = new DashMediaSource(uri4, dataSourceFactory,
                 new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
 
 //        MediaSource videoSource = new DashMediaSource(uri,
