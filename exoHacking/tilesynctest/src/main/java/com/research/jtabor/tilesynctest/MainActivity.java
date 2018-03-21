@@ -1,9 +1,17 @@
 package com.research.jtabor.tilesynctest;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -13,14 +21,19 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.VrRenderersFactory2;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.MergingMediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
@@ -35,8 +48,11 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
+import com.research.jtabor.tcpclient.TCPClient;
+import com.research.jtabor.tcpclient.TCPClientService;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback{
+    public static final String TAG = MainActivity.class.getSimpleName();
     SurfaceView sv1;
     SurfaceView sv2;
     SurfaceView sv3;
@@ -48,6 +64,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     RelativeLayout rl4;
 
     Surface surfaces[] = new Surface[4];
+
+    private static String SERVER_IP = "192.168.1.111";
+    private static int SERVER_PORT = 8028;
+    private String mpdFileUrls=
+            "https://storage.googleapis.com/vr-paradrop/fusion-test/dash-tile-test/VIDEO_0065-tile1.mpd,"
+                    + "https://storage.googleapis.com/vr-paradrop/fusion-test/dash-tile-test/VIDEO_0065-tile2.mpd";
+
+    TCPClientService tcpClientService;
+    private Handler mHandler;
+    boolean mBound;
 
     VrRenderersFactory2 vrf;
     VideoRendererEventListener rendererListener[] = new VideoRendererEventListener[4];
@@ -90,12 +116,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
         sv4.getHolder().addCallback(this);
         sv4.setLayoutParams(lp);
         rl4.addView(sv4);
+
+        bindToTCPClientService();
+
     }
 
     public void onClick(View v){
-        createAllSurfaces();
+        createAllSurfaces(txtIpAddress.getText().toString() );
     }
-    public void createAllSurfaces(){
+    public void createAllSurfaces(String url){
 
         Handler mainHandler = new Handler();
         BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
@@ -117,7 +146,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
 // This is the MediaSource representing the media to be played.
 //        Uri uri =  Uri.parse( "http://yt-dash-mse-test.commondatastorage.googleapis.com/media/car-20120827-manifest.mpd" );
-        Uri uri =  Uri.parse( txtIpAddress.getText().toString() );
+        Uri uri =  Uri.parse( url);
         DashMediaSource videoSource = new DashMediaSource(uri, dataSourceFactory,
                 new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
         DashMediaSource videoSource2 = new DashMediaSource(uri, dataSourceFactory,
@@ -141,11 +170,38 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
         player.setVideoSurfaces(surfaces);
 
         player.prepare(vrVideoSource);
+
         player.setPlayWhenReady(true);
 
     }
 
+    public void bindToTCPClientService() {
+        mHandler = new Handler();
 
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                tcpMessageListener,
+                new IntentFilter("tcp-message")
+        );
+
+        Intent intent = new Intent(this, TCPClientService.class);
+        intent.putExtra("serverIp", SERVER_IP);
+        intent.putExtra("serverPort", SERVER_PORT);
+        intent.putExtra("mpdUrls", mpdFileUrls);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "Binding to service");
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+        }
+        mHandler.removeCallbacks(sendExoplayerStatus);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(tcpMessageListener);
+    }
 
     public void createPlayerForSurface(Surface s){
 
@@ -224,4 +280,73 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
 
     }
+
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            Log.d(TAG, "Bound to service");
+            TCPClientService.MyBinder binder = (TCPClientService.MyBinder) service;
+            tcpClientService = binder.getService();
+            mBound = true;
+            sendExoplayerStatus.run();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };
+
+
+    // send exoplyer status periodically
+    Runnable sendExoplayerStatus = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (player != null && tcpClientService != null) {
+                  long position =  player.getCurrentPosition(); //this function can change value of mInterval.
+                    tcpClientService.sendMessage("position~" + position);
+                    //Log.d(TAG, "Sending: " + position);
+                }
+            } finally {
+                // 100% guarantee that this always happens, even if
+                // your update method throws an exception
+                mHandler.postDelayed(sendExoplayerStatus, 100);
+            }
+        }
+    };
+
+    private BroadcastReceiver tcpMessageListener = new BroadcastReceiver() {
+        @Override
+        public void onReceive( Context context, Intent intent ) {
+
+            String data = intent.getStringExtra("message");
+            Log.d(TAG, "Received command: " + data);
+            Log.d(MainActivity.class.getSimpleName(), "Received data : " +  data);
+            if (data.contains("play")) {
+                createAllSurfaces("http://" + SERVER_IP + "/VIDEO_0065-tile1.mpd");
+            } else if (data.contains("pause")) {
+                pausePlayer();
+            } else if (data.contains("resume")) {
+                resumePlayer();
+            }
+        }
+    };
+
+    private void pausePlayer(){
+        if (player != null) {
+            player.setPlayWhenReady(false);
+            player.getPlaybackState();
+        }
+    }
+    private void resumePlayer(){
+        if (player != null) {
+            player.setPlayWhenReady(true);
+            player.getPlaybackState();
+        }
+    }
+
 }

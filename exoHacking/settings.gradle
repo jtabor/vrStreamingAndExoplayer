@@ -1,4 +1,4 @@
 include ':app', ':tilesynctest'
-gradle.ext.exoplayerRoot = '/home/jtabor/projects/vrStreaming/ExoPlayer'
+gradle.ext.exoplayerRoot = '/Users/parshar2/Dropbox/UW Madison/2017_18-Spring/VR Development/vrStreamingAndExoplayer/ExoPlayer'
 gradle.ext.exoplayerModulePrefix = 'exoplayer-'
 apply from: new File(gradle.ext.exoplayerRoot, 'core_settings.gradle')

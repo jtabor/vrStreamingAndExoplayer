@@ -80,7 +80,10 @@
         android:layout_marginLeft="19dp"
         android:ems="10"
         android:inputType="textPersonName"
-        android:text="http://storage.googleapis.com/vr-paradrop/fusion-test/dash-test/VIDEO_0065.mpd"
+        android:text="http://192.168.1.111/VIDEO_0065-tile1.mpd"
+        android:textColor="@android:color/white"
         app:layout_constraintLeft_toRightOf="@+id/button"
         tools:layout_editor_absoluteY="460dp" />
 </android.support.constraint.ConstraintLayout>
+
+    <!--android:text="http://storage.googleapis.com/vr-paradrop/fusion-test/dash-test/VIDEO_0065.mpd"-->
