@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.trackselection;
 
+import android.util.Log;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.util.Assertions;
@@ -81,6 +83,7 @@ public final class FixedTrackSelection extends BaseTrackSelection {
   public void updateSelectedTrack(long playbackPositionUs, long bufferedDurationUs,
       long availableDurationUs) {
     // Do nothing.
+    Log.d("JOSH","Called update selected track!");
   }
 
   @Override

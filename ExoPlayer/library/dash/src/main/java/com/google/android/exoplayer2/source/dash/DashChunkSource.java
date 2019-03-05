@@ -33,7 +33,6 @@ public interface DashChunkSource extends ChunkSource {
         boolean enableEventMessageTrack, boolean enableCea608Track);
 
   }
-
   void updateManifest(DashManifest newManifest, int periodIndex);
 
 }

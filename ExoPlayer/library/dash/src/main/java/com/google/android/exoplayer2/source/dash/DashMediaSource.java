@@ -53,6 +53,7 @@ import java.util.TimeZone;
  */
 public final class DashMediaSource implements MediaSource {
 
+
   static {
     ExoPlayerLibraryInfo.registerModule("goog.exo.dash");
   }

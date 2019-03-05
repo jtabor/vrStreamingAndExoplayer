@@ -29,6 +29,7 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.Choreographer;
 import android.view.Surface;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -53,7 +54,13 @@ import java.nio.ByteBuffer;
  * Decodes and renders video using {@link MediaCodec}.
  */
 @TargetApi(16)
-public class MediaCodecVideoRenderer extends MediaCodecRenderer {
+public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Choreographer.FrameCallback {
+
+  private VrVideoSync videoSync = new VrVideoSync(4,this);
+  MediaCodec nextCodec;
+  int nextBufferIndex;
+  long nextPresentationTimeUs;
+  boolean frameReady = false;
 
   private static final String TAG = "MediaCodecVideoRenderer";
   private static final String KEY_CROP_LEFT = "crop-left";
@@ -576,27 +583,37 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
       return true;
     }
 
-    if (Util.SDK_INT >= 21) {
+    if (false){//if (Util.SDK_INT >= 21) {
       // Let the underlying framework time the release.
-      if (earlyUs < 50000) {
-        renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, adjustedReleaseTimeNs);
-        return true;
+      if (earlyUs < 70000) {//JOSH: Changed from: if (earlyUs < 50000) {
+        //renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, adjustedReleaseTimeNs);
+        //return true;
       }
     } else {
       // We need to time the release ourselves.
-      if (earlyUs < 30000) {
-        if (earlyUs > 11000) {
+      if (earlyUs < 16665) {
+        if (earlyUs > 17000) {
           // We're a little too early to render the frame. Sleep until the frame can be rendered.
           // Note: The 11ms threshold was chosen fairly arbitrarily.
-          try {
-            // Subtracting 10000 rather than 11000 ensures the sleep time will be at least 1ms.
-            Thread.sleep((earlyUs - 10000) / 1000);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-          }
+//          try {
+//            // Subtracting 10000 rather than 11000 ensures the sleep time will be at least 1ms.
+//            //Thread.sleep(earlyUs-1000);
+//          } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//          }
+          return false;
         }
-        renderOutputBuffer(codec, bufferIndex, presentationTimeUs);
-        return true;
+        boolean retVal = false;
+        if (videoSync.sholdRender(positionUs)){
+          retVal = true;
+//          renderOutputBuffer(codec, bufferIndex, presentationTimeUs);
+          renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, adjustedReleaseTimeNs);
+        }
+        nextBufferIndex = bufferIndex;
+        nextCodec = codec;
+        nextPresentationTimeUs = presentationTimeUs;
+        frameReady = true;
+        return retVal;
       }
     }
 
@@ -604,6 +621,18 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
     return false;
   }
 
+
+  @Override
+  public void doFrame(long l) {
+    if (!frameReady){
+      return;
+    }
+    Log.d("JOSH-DEBUG","Tried to render frame: " + videoSync.frameId + " " + nextBufferIndex + " " + nextPresentationTimeUs);
+    frameReady =false;
+    renderOutputBuffer(nextCodec, nextBufferIndex, nextPresentationTimeUs);
+    onProcessedOutputBuffer(nextPresentationTimeUs);
+    videoSync.incrementFrameNumber();
+  }
   /**
    * Called when an output buffer is successfully processed.
    *
@@ -741,6 +770,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
   @TargetApi(21)
   protected void renderOutputBufferV21(MediaCodec codec, int index, long presentationTimeUs,
       long releaseTimeNs) {
+    Log.d("JOSH","presentationTime: " + presentationTimeUs);
     maybeNotifyVideoSizeChanged();
     TraceUtil.beginSection("releaseOutputBuffer");
     codec.releaseOutputBuffer(index, releaseTimeNs);
@@ -1104,6 +1134,8 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
   private static int getRotationDegrees(Format format) {
     return format.rotationDegrees == Format.NO_VALUE ? 0 : format.rotationDegrees;
   }
+
+
 
   protected static final class CodecMaxValues {
 

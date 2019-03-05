@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.trackselection;
 
+import android.util.Log;
+
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Renderer;
@@ -127,6 +129,7 @@ public abstract class TrackSelector {
    */
   protected final void invalidate() {
     if (listener != null) {
+      Log.d("JSOH","Invalidation Called.");
       listener.onTrackSelectionsInvalidated();
     }
   }

@@ -79,6 +79,7 @@ public class VrTileTrackSelector extends MappingTrackSelector {
 
 
     int tracksPerSource = 1;
+    TrackSelection[] trackSelections;
   /**
    * Constraint parameters for {@link DefaultTrackSelector}.
    */
@@ -441,10 +442,19 @@ public class VrTileTrackSelector extends MappingTrackSelector {
   /**
    * Constructs an instance that does not support adaptive track selection.
    */
-  public VrTileTrackSelector() {
+  public VrTileTrackSelector(int numberOfTiles) {
     this((TrackSelection.Factory) null);
+    trackSelections = new VrTileTrackSelection[numberOfTiles];
+    tracksToSelect = new int[numberOfTiles];
+    for (int i = 0; i < tracksToSelect.length; i++){
+      tracksToSelect[i] = -1;
+    }
+
   }
 
+  public void updateTrackSelection(int index, int newTrack){
+//    trackSelections[index].setNewSelection(newTrack);
+  }
   /**
    * Constructs an instance that supports adaptive track selection. Adaptive track selections use
    * the provided {@link BandwidthMeter} to determine which individual track should be used during
@@ -549,24 +559,42 @@ public class VrTileTrackSelector extends MappingTrackSelector {
     return rendererTrackSelections;
   }
 
+//  public VrTileTrackSelection[] getTrackSelections(){
+//      return trackSelections;
+//  }
 
+  int tracksToSelect[];
+public void setTrackSelection(int index, int track){
+  tracksToSelect[index] = track;
+  this.updateTrackSelection(index,track);
+}
 protected void selectVideoTracks(Integer[] videoRendererIndices, RendererCapabilities[] capabilities, TrackGroupArray[] groups,
                                  int[][][] formatsupport, TrackSelection[] videoRendererSelections, Parameters params){
     ArrayList<Integer[]> formatSupports = new ArrayList<>();
     TrackGroupArray groupArray = groups[0];
-    Log.d("JOSH","groupArrays size: " + groups.length);
-    Log.d("JOSH","Group0: " + groups[0].length);
-    Log.d("JOSH","Group1: " + groups[1].length);
-    Log.d("JOSH","Group2: " + groups[2].length);
-    Log.d("JOSH","Group3: " + groups[3].length);
-    Log.d("JOSH","Group4: " + groups[4].length);
-    Log.d("JOSH","Group5: " + groups[5].length);
-    Log.d("JOSH","Group6: " + groups[6].length);
+    int[] trackIndices = {2,3,0,1,4,5,6,7};
 
+    for (int i = 0; i < groups.length; i++){
+      for (int n = 0; n < groups[i].length; n++){
+        for (int x = 0; x < groups[i].get(n).length; x++){
+          Log.d("JOSH","A: " + i + " g: " + n + " t: " + x + " f: " + groups[i].get(n).getFormat(x));
+        }
+
+      }
+    }
     for (int i = 0 ;i < videoRendererIndices.length; i++){
-        TrackGroup group = groupArray.get(i);
-        Log.d("JOSH","Group size: " + group.length);
-        videoRendererSelections[videoRendererIndices[i]] = new FixedTrackSelection(group, 0);
+//        TrackGroup group = groupArray.get(i);
+      TrackGroup group = groupArray.get(i);
+       // if (tracksToSelect[i] != -1){
+//          trackSelections[i] = new VrTileTrackSelection(group, new int[] {0,1},tracksToSelect[i]);
+          //Log.d("JOSH","Set new selection: " + tracksToSelect[i]);
+//          videoRendererSelections[videoRendererIndices[i]] = trackSelections[i];
+        //}
+//      trackSelections[i] = new VrTileTrackSelection(group, new int[] {0,1},0);
+      Log.d("JOSH","size: " + groupArray.get(0).length + " s: " + trackIndices.length + " i: " + i);
+//      FixedTrackSelection fSelection = new FixedTrackSelection(group,trackIndices[i]);
+      FixedTrackSelection fSelection = new FixedTrackSelection(group,trackIndices[i]);
+      videoRendererSelections[videoRendererIndices[i]] = fSelection;
     }
 
 }
@@ -597,7 +625,9 @@ protected void selectVideoTracks(Integer[] videoRendererIndices, RendererCapabil
         selection = selectFixedVideoTrack(groups, formatSupport, params);
     return selection;
   }
-
+  public void invalidateSelection(){
+    invalidate();
+  }
   private static boolean isSupportedAdaptiveVideoTrack(Format format, String mimeType,
       int formatSupport, int requiredAdaptiveSupport, int maxVideoWidth, int maxVideoHeight,
       int maxVideoBitrate) {

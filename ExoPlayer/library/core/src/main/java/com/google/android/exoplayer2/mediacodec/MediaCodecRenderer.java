@@ -54,7 +54,11 @@ import java.util.List;
  */
 @TargetApi(16)
 public abstract class MediaCodecRenderer extends BaseRenderer {
-
+  //JOSH: ADDED THIS.
+  static int numRenderers = 0;
+  int thisID = -1;
+  int numRendered = 0;
+  long timestamp = 0;
   /**
    * Thrown when a failure occurs instantiating a decoder.
    */
@@ -254,6 +258,9 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
       boolean playClearSamplesWithoutKeys) {
     super(trackType);
+    //JOSH: ADDED THIS
+    thisID = numRenderers;
+    numRenderers++;
     Assertions.checkState(Util.SDK_INT >= 16);
     this.mediaCodecSelector = Assertions.checkNotNull(mediaCodecSelector);
     this.drmSessionManager = drmSessionManager;
@@ -549,7 +556,11 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     maybeInitCodec();
     if (codec != null) {
       TraceUtil.beginSection("drainAndFeed");
-      while (drainOutputBuffer(positionUs, elapsedRealtimeUs)) {}
+      while (drainOutputBuffer(positionUs, elapsedRealtimeUs)) {
+        numRendered++;
+        timestamp = System.currentTimeMillis();
+        //Log.d("JOSH-METRICS","renderer: " + thisID + " p: " + positionUs + " frame: " + numRendered + " ts: " + timestamp);
+      }
       while (feedInputBuffer()) {}
       TraceUtil.endSection();
     } else {

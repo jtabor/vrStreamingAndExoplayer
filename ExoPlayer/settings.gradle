@@ -18,7 +18,7 @@ if (gradle.ext.has('exoplayerModulePrefix')) {
     modulePrefix += gradle.ext.exoplayerModulePrefix
 }
 
-include modulePrefix + 'demo'
+include modulePrefix + 'demo', ':app', ':exoplayerlibrarytest', ':tilesynctest'
 include modulePrefix + 'demo-ima'
 include modulePrefix + 'playbacktests'
 project(modulePrefix + 'demo').projectDir = new File(rootDir, 'demos/main')
