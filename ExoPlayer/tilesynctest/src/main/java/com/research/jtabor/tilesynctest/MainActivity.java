@@ -3,6 +3,7 @@ package com.research.jtabor.tilesynctest;
 import android.app.Activity;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -50,6 +51,10 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 //    SurfaceView sv2;
 //    SurfaceView sv3;
 //    SurfaceView sv4;
+    private static final boolean USING_GL = false;
+    private GLSurfaceView glView;
+
+
     static final int numberOfTiles = 4;
 
     TextureView[] tvs = new TextureView[numberOfTiles];
@@ -74,32 +79,37 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        d = getWindowManager().getDefaultDisplay();
+
+        if (USING_GL){
+            glView = new GLBufferedRendererView(this);
+            setContentView(glView);
+        }
+        else {
+            setContentView(R.layout.activity_main);
+            d = getWindowManager().getDefaultDisplay();
 
 
-        rl1 = (RelativeLayout)findViewById(R.id.container1);
-        rl2 = (RelativeLayout)findViewById(R.id.container2);
-        rl3 = (RelativeLayout)findViewById(R.id.container3);
-        rl4 = (RelativeLayout)findViewById(R.id.container4);
+            rl1 = (RelativeLayout) findViewById(R.id.container1);
+            rl2 = (RelativeLayout) findViewById(R.id.container2);
+            rl3 = (RelativeLayout) findViewById(R.id.container3);
+            rl4 = (RelativeLayout) findViewById(R.id.container4);
 
 
+            RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT);
 
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT,RelativeLayout.LayoutParams.FILL_PARENT);
-
-        tvs[0] = new TextureView(this);
-        tvs[0].setSurfaceTextureListener(this);
-        rl1.addView(tvs[0]);
-        tvs[1] = new TextureView(this);
-        tvs[1].setSurfaceTextureListener(this);
-        rl2.addView(tvs[1]);
-        tvs[2] = new TextureView(this);
-        tvs[2].setSurfaceTextureListener(this);
-        rl3.addView(tvs[2]);
-        tvs[3] = new TextureView(this);
-        tvs[3].setSurfaceTextureListener(this);
-        rl4.addView(tvs[3]);
-
+            tvs[0] = new TextureView(this);
+            tvs[0].setSurfaceTextureListener(this);
+            rl1.addView(tvs[0]);
+            tvs[1] = new TextureView(this);
+            tvs[1].setSurfaceTextureListener(this);
+            rl2.addView(tvs[1]);
+            tvs[2] = new TextureView(this);
+            tvs[2].setSurfaceTextureListener(this);
+            rl3.addView(tvs[2]);
+            tvs[3] = new TextureView(this);
+            tvs[3].setSurfaceTextureListener(this);
+            rl4.addView(tvs[3]);
+        }
     }
 
     public void onClick(View v){
@@ -136,6 +146,10 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             //ready to go.
             startExoplayer();
         }
+    }
+
+    private int makeExternalTexture(){
+
     }
 
     @Override
