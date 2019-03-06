@@ -148,9 +148,6 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         }
     }
 
-    private int makeExternalTexture(){
-
-    }
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {

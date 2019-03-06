@@ -12,6 +12,8 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import exoaartest.research.josht.exoplayerlibrarytest.SurfaceTest;
+
 /**
  * Created by josht on 3/2/2019.
  */
@@ -19,6 +21,9 @@ import javax.microedition.khronos.opengles.GL10;
 
 
 public class BufferedRenderer implements GLSurfaceView.Renderer {
+
+    SurfaceTest st;
+
 
     private final String vertexShaderSource =
             "//VERTEX SHADER\n" +
@@ -80,6 +85,8 @@ static float baseTile[] =  {
     int vColor;
     int texCoord;
 
+    int textureHandles[] = new int[8];
+
     private float[] addToArray(float[] input, float x, float y, float z){
         float[] toReturn = new float[input.length];
         for (int i = 0; i < input.length; i = i+3){
@@ -118,6 +125,8 @@ static float baseTile[] =  {
         texCoordsBuffer.put(allTexCoords);
         texCoordsBuffer.position(0);
 
+        GLES20.glGenTextures(8,textureHandles,0);
+
         glslProgram = GLES20.glCreateProgram();
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER,vertexShaderSource);
         fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER,fragmentShaderSource);
@@ -140,6 +149,8 @@ static float baseTile[] =  {
     public void onDrawFrame(GL10 gl10) {
         //display textures on screen.  Decide when to do it.
         GLES20.glUseProgram(glslProgram);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+
         checkErrors("1");
         vPosition = GLES20.glGetAttribLocation(glslProgram,"vPosition");
         checkErrors("2");
@@ -177,5 +188,4 @@ static float baseTile[] =  {
             Log.e("JOSH-GRAPHICS",errorTag + ": " + error);
         }
     }
-
 }
