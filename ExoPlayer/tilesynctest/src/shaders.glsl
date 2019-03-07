@@ -11,9 +11,10 @@ void main() {
 
 //FRAGMENT SHADER
 #extension GL_OES_EGL_image_external : require
+precision mediump float;
 uniform vec3 vColor;
-uniform samplerExternalOES texture;r
+uniform samplerExternalOES s_texture[4];
 varying vec2 texCoordinates;
 void main(){
-	gl_FragColor = texture2d(texture,texCoordinates);
+	gl_FragColor = texture2D(s_texture[0],texCoordinates);
 }

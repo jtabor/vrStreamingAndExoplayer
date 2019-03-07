@@ -51,7 +51,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 //    SurfaceView sv2;
 //    SurfaceView sv3;
 //    SurfaceView sv4;
-    private static final boolean USING_GL = false;
+    private static final boolean USING_GL = true;
     private GLSurfaceView glView;
 
 

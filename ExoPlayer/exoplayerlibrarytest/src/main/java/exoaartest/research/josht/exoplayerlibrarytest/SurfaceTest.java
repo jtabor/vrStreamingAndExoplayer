@@ -196,7 +196,7 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
             }
         }
         for (int i = 0; i < numberOfTiles; i++){
-            //surfaceTextures[i].updateTexImage();
+            surfaceTextures[i].updateTexImage();
             frameReady[i] = false;
         }
     }

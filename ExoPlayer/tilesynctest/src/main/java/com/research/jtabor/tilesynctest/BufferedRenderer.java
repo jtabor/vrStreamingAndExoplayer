@@ -1,8 +1,13 @@
 package com.research.jtabor.tilesynctest;
 
+import android.content.Context;
+import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.os.Looper;
 import android.util.Log;
+
+import com.google.android.exoplayer2.Player;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -23,7 +28,7 @@ import exoaartest.research.josht.exoplayerlibrarytest.SurfaceTest;
 public class BufferedRenderer implements GLSurfaceView.Renderer {
 
     SurfaceTest st;
-
+    Context context;
 
     private final String vertexShaderSource =
             "//VERTEX SHADER\n" +
@@ -37,11 +42,13 @@ public class BufferedRenderer implements GLSurfaceView.Renderer {
 
     private final String fragmentShaderSource =
             "//FRAGMENT SHADER\n" +
+                    "#extension GL_OES_EGL_image_external : require\n" +
+                    "precision mediump float;\n" +
                     "uniform vec3 vColor;\n" +
+                    "uniform samplerExternalOES s_texture[4];\n" +
                     "varying vec2 texCoordinates;\n" +
                     "void main(){\n" +
-                    "\tgl_FragColor = vec4(texCoordinates.x,texCoordinates.y,vColor.z,1f);\n" +
-                    "\n" +
+                    "\tgl_FragColor = texture2D(s_texture[1],texCoordinates);\n" +
                     "}";
 
     private int vertexShader;
@@ -85,7 +92,7 @@ static float baseTile[] =  {
     int vColor;
     int texCoord;
 
-    int textureHandles[] = new int[8];
+    int textureHandles[];
 
     private float[] addToArray(float[] input, float x, float y, float z){
         float[] toReturn = new float[input.length];
@@ -96,7 +103,9 @@ static float baseTile[] =  {
         }
         return toReturn;
     }
-
+    public void setContext(Context newContext){
+        context = newContext;
+    }
     //create the textures here and link them to Exoplayer
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
@@ -124,8 +133,13 @@ static float baseTile[] =  {
         texCoordsBuffer = bb2.asFloatBuffer();
         texCoordsBuffer.put(allTexCoords);
         texCoordsBuffer.position(0);
+        Looper.prepare();
 
-        GLES20.glGenTextures(8,textureHandles,0);
+        st = new SurfaceTest(4,context,1920,1080,true,false);
+        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60-tiles.mpd");
+        textureHandles = st.getTextureIds();
+        st.initExoplayer();
+        st.startVideo();
 
         glslProgram = GLES20.glCreateProgram();
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER,vertexShaderSource);
@@ -147,26 +161,61 @@ static float baseTile[] =  {
 
     @Override
     public void onDrawFrame(GL10 gl10) {
+        st.updateTexture();
         //display textures on screen.  Decide when to do it.
         GLES20.glUseProgram(glslProgram);
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-
         checkErrors("1");
-        vPosition = GLES20.glGetAttribLocation(glslProgram,"vPosition");
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         checkErrors("2");
-        GLES20.glEnableVertexAttribArray(vPosition);
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,textureHandles[0]);
         checkErrors("3");
-        GLES20.glVertexAttribPointer(vPosition,3,GLES20.GL_FLOAT,false,3*4,vertexBuffer);
+        int programTexHandle = GLES20.glGetUniformLocation(glslProgram,"s_texture[0]");
         checkErrors("4");
+        GLES20.glUniform1i(programTexHandle,0);
+        checkErrors("5");
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        checkErrors("2");
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,textureHandles[1]);
+        checkErrors("3");
+        programTexHandle = GLES20.glGetUniformLocation(glslProgram,"s_texture[1]");
+        checkErrors("4");
+        GLES20.glUniform1i(programTexHandle,1);
+        checkErrors("5");
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+        checkErrors("2");
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,textureHandles[2]);
+        checkErrors("3");
+        programTexHandle = GLES20.glGetUniformLocation(glslProgram,"s_texture[2]");
+        checkErrors("4");
+        GLES20.glUniform1i(programTexHandle,2);
+        checkErrors("5");
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
+        checkErrors("2");
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,textureHandles[3]);
+        checkErrors("3");
+        programTexHandle = GLES20.glGetUniformLocation(glslProgram,"s_texture[3]");
+        checkErrors("4");
+        GLES20.glUniform1i(programTexHandle,3);
+        checkErrors("5");
+
+        vPosition = GLES20.glGetAttribLocation(glslProgram,"vPosition");
+        checkErrors("6");
+        GLES20.glEnableVertexAttribArray(vPosition);
+        checkErrors("7");
+        GLES20.glVertexAttribPointer(vPosition,3,GLES20.GL_FLOAT,false,3*4,vertexBuffer);
+        checkErrors("8");
         texCoord = GLES20.glGetAttribLocation(glslProgram,"texCoord");
         GLES20.glEnableVertexAttribArray(texCoord);
         GLES20.glVertexAttribPointer(texCoord,2,GLES20.GL_FLOAT,false,2*4,texCoordsBuffer);
         vColor = GLES20.glGetUniformLocation(glslProgram,"vColor");
-        checkErrors("5");
+        checkErrors("9");
         GLES20.glUniform3fv(vColor,1,color,0);
-        checkErrors("6");
+        checkErrors("10");
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,allTiles.length/3);
-        checkErrors("7");
+        checkErrors("11");
         GLES20.glDisableVertexAttribArray(vPosition);
 
     }
