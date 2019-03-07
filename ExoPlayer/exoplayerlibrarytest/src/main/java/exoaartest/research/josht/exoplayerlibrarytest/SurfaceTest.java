@@ -99,6 +99,9 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
     private Handler mHandler;
     boolean mBound;
     boolean goThroughRouter = false;
+
+    Handler mainHandler;
+
     public SurfaceTest(int tilesInVideo, Context currentUnityContext,int widthOfTile, int heightOfTile,boolean createTextures, boolean playFromRouter){
         numberOfTiles = tilesInVideo;
         currentContext = currentUnityContext;
@@ -108,6 +111,7 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
         goThroughRouter = playFromRouter;
     }
     public void init(String manifestUrl){
+        mainHandler = new Handler();
         url = manifestUrl;
         rendererListener = new VideoRendererEventListener[numberOfTiles];
         surfaceTextures = new SurfaceTexture[numberOfTiles];
@@ -178,11 +182,12 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
         for (int i = 0; i < numberOfTiles; i++){
             surfaceTextures[i] = new SurfaceTexture(textureIds[i]);
             surfaceTextures[i].setDefaultBufferSize(tileWidth,tileHeight);
-            surfaceTextures[i].setOnFrameAvailableListener(this);
             tvs[i] = new TextureView(currentContext);
             tvs[i].setSurfaceTextureListener(this);
             tvs[i].setSurfaceTexture(surfaceTextures[i]);
         }
+        surfaceTextures[0].setOnFrameAvailableListener(this);
+
     }
 
     public void updateTexture(){
@@ -195,7 +200,8 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
 //                return;
             }
         }
-        for (int i = 0; i < numberOfTiles; i++){
+
+        for (int i = 0; i < numberOfTiles; i++) {
             surfaceTextures[i].updateTexImage();
             frameReady[i] = false;
         }
@@ -214,7 +220,6 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
     }
     public void initExoplayer(){
 //        numberOfTiles = 1;
-        Handler mainHandler = new Handler();
         BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         //LoadControl lc = new DefaultLoadControl(new DefaultAllocator(true, 5000),50,150,100L,100L);
         TrackSelection.Factory videoTrackSelectionFactory =
@@ -327,10 +332,11 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
 
     @Override
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        //Log.d("JOSH","Frame available!");
+        Log.d("JOSH","HIT A FRAME!");
         for (int i = 0; i < surfaceTextures.length; i++){
             if (surfaceTexture.equals(surfaceTextures[i])){
                 frameReady[i] = true;
+                Log.d("JOSH","Frame:" + i + " available!");
                 return;
             }
         }

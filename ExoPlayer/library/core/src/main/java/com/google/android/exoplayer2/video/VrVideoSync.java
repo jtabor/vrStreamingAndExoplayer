@@ -12,6 +12,8 @@ public class VrVideoSync {
     static int totalNumberOfTiles = 0;
     static int numberOfTiles = 0;
     static boolean[] readyToRender;
+    static boolean[] onFirstBuffer;
+    static boolean writeToFirstBuffer = true;
     static long renderTime;
     static boolean firstTime = false;
     static boolean dynamicResize = false;
@@ -33,6 +35,10 @@ public class VrVideoSync {
         if (!dynamicResize){
             dynamicResize  = true;
             readyToRender = new boolean[totalNumTiles];
+            onFirstBuffer = new boolean[totalNumTiles];
+            for (int i = 0; i < onFirstBuffer.length; i++){
+                onFirstBuffer[i] = true;
+            }
             frameCallbacks = new Choreographer.FrameCallback[totalNumTiles];
         }
         frameId = numberOfTiles;
