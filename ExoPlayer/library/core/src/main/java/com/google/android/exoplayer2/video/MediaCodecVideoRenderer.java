@@ -61,6 +61,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
   int nextBufferIndex;
   long nextPresentationTimeUs;
   boolean frameReady = false;
+  Surface surface2;
 
   private static final String TAG = "MediaCodecVideoRenderer";
   private static final String KEY_CROP_LEFT = "crop-left";

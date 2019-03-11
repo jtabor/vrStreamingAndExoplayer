@@ -4,6 +4,7 @@ import android.content.Context;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.opengl.GLU;
 import android.os.Looper;
 import android.util.Log;
 
@@ -46,11 +47,23 @@ public class BufferedRenderer implements GLSurfaceView.Renderer {
                     "#extension GL_OES_EGL_image_external : require\n" +
                     "precision mediump float;\n" +
                     "uniform vec3 vColor;\n" +
-                    "uniform samplerExternalOES s_texture;\n" +
+                    "uniform sampler2D s_texture;\n" +
                     "varying vec2 texCoordinates;\n" +
                     "void main(){\n" +
                     "\tgl_FragColor = texture2D(s_texture,texCoordinates);\n" +
                     "}";
+
+    //private final String combinedVertexShader = "";
+
+    private final String combinedFragmentShader = "//FRAGMENT SHADER\n" +
+            "precision mediump float;\n" +
+            "uniform vec3 vColor;\n" +
+            "uniform sampler2D s_texture;\n" +
+            "varying vec2 texCoordinates;\n" +
+            "void main(){\n" +
+            "\tgl_FragColor = texture2D(s_texture,texCoordinates);\n" +
+            "}";
+
 
     private int vertexShader;
     private int fragmentShader;
@@ -85,10 +98,13 @@ static float baseTile[] =  {
     float allTiles[][];
     float allTexCoords[][];
 
+    int renderTextures[] = new int[3];
+    int FBOTexture;
     FloatBuffer vertexBuffer[] = new FloatBuffer[4];
     FloatBuffer texCoordsBuffer[]  = new FloatBuffer[4];
 
     int glslProgram;
+    int glslProgramOneTile;
     int vPosition;
     int vColor;
     int texCoord;
@@ -162,7 +178,19 @@ static float baseTile[] =  {
         GLES20.glAttachShader(glslProgram,fragmentShader);
         GLES20.glLinkProgram(glslProgram);
 
+        glslProgramOneTile = GLES20.glCreateProgram();
+        vertexShader = loadShader(GLES20.GL_VERTEX_SHADER,vertexShaderSource);
+        fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER,combinedFragmentShader);
+        GLES20.glAttachShader(glslProgramOneTile,vertexShader);
+        GLES20.glAttachShader(glslProgramOneTile,fragmentShader);
+        GLES20.glLinkProgram(glslProgramOneTile);
 
+        GLES20.glGenTextures(3,renderTextures,0);
+        for (int i = 0; i < 3; i++){
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,renderTextures[i]);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, 1920,1080, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+        }
+        FBOTexture = createFBOTexture(1920,1080, renderTextures);
     }
 
     @Override
@@ -181,13 +209,13 @@ static float baseTile[] =  {
         for (int i = 0; i < 4; i++) {
             GLES20.glUseProgram(glslProgram);
             checkErrors("1");
-            GLES20.glActiveTexture(textureUnits[i]);
+            GLES20.glActiveTexture(textureUnits[0]);
             checkErrors("2");
             GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureHandles[i]);
             checkErrors("3");
             int programTexHandle = GLES20.glGetUniformLocation(glslProgram, "s_texture");
             checkErrors("4");
-            GLES20.glUniform1i(programTexHandle, i);
+            GLES20.glUniform1i(programTexHandle, 0);
             checkErrors("5");
             vPosition = GLES20.glGetAttribLocation(glslProgram, "vPosition");
             checkErrors("6");
@@ -202,10 +230,35 @@ static float baseTile[] =  {
             checkErrors("9");
             GLES20.glUniform3fv(vColor, 1, color, 0);
             checkErrors("10");
+
+            GLES20.glBindRenderbuffer(GLES20.GL_FRAMEBUFFER,FBOTexture);
+//            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, allTiles[i].length / 3);
             checkErrors("11");
             GLES20.glDisableVertexAttribArray(vPosition);
         }
+        GLES20.glUseProgram(glslProgramOneTile);
+        GLES20.glActiveTexture(textureUnits[0]);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,renderTextures[0]);
+        int programTexHandle = GLES20.glGetUniformLocation(glslProgram, "s_texture");
+        checkErrors("a4");
+
+        GLES20.glUniform1i(programTexHandle, 0);
+        checkErrors("a5");
+        vPosition = GLES20.glGetAttribLocation(glslProgram, "vPosition");
+        checkErrors("a6");
+        GLES20.glEnableVertexAttribArray(vPosition);
+        checkErrors("a7");
+        GLES20.glVertexAttribPointer(vPosition, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[0]);
+        checkErrors("a8");
+        texCoord = GLES20.glGetAttribLocation(glslProgram, "texCoord");
+        GLES20.glEnableVertexAttribArray(texCoord);
+        GLES20.glVertexAttribPointer(texCoord, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[0]);
+        //draw the render texture at the end.
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, allTiles[0].length / 3);
+        checkErrors("a11");
+        GLES20.glDisableVertexAttribArray(vPosition);
 
     }
     private int loadShader(int type, String shaderSource){
@@ -220,10 +273,31 @@ static float baseTile[] =  {
         }
         return shaderHandle;
     }
+    private int createFBOTexture(int width, int height, int[] renderTextures) {
+        int[] temp = new int[1];
+        GLES20.glGenFramebuffers(1, temp, 0);
+        checkErrors("x4");
+        int handleID = temp[0];
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, handleID);
+        checkErrors("x5");
+
+        int fboTex = renderTextures[0];
+        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, fboTex, 0);
+        checkErrors("x6");
+        int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
+        if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+            Log.e("JOSH","Framebuffer error: " + status);
+            throw new IllegalStateException("GL_FRAMEBUFFER status incomplete");
+        }
+        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,GLES20.GL_RENDERBUFFER,0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        return handleID;
+    }
     private void checkErrors(String errorTag){
         int error;
         while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR){
-            Log.e("JOSH-GRAPHICS",errorTag + ": " + error);
+            Log.e("JOSH-GRAPHICS",errorTag + ": " +  ": " + GLU.gluErrorString(error));
         }
     }
 }

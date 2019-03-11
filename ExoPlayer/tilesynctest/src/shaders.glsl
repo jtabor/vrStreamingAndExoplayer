@@ -13,7 +13,16 @@ void main() {
 #extension GL_OES_EGL_image_external : require
 precision mediump float;
 uniform vec3 vColor;
-uniform samplerExternalOES s_texture;
+uniform sampler2D s_texture;
+varying vec2 texCoordinates;
+void main(){
+	gl_FragColor = texture2D(s_texture,texCoordinates);
+}
+
+//FRAGMENT SHADER
+precision mediump float;
+uniform vec3 vColor;
+uniform sampler2D s_texture;
 varying vec2 texCoordinates;
 void main(){
 	gl_FragColor = texture2D(s_texture,texCoordinates);
