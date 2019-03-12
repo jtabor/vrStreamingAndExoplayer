@@ -293,13 +293,20 @@ static float baseTile[] =  {
         int handleID = temp[0];
 
         GLES20.glGenRenderbuffers(1,temp,0);
+        checkErrors("x5");
+
         renderBufferActual = temp[0];
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, handleID);
         checkErrors("x5");
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,renderTextures[0]);
+        checkErrors("x5");
+
         int fboTex = renderTextures[0];
-        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,renderBufferActual);
+        //GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER,renderBufferActual);
+        checkErrors("x5");
+
         GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER,GLES20.GL_RGBA4,2048,2048);
+        checkErrors("x5");
 
         GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, fboTex, 0);
         checkErrors("x6");
@@ -308,9 +315,12 @@ static float baseTile[] =  {
             Log.e("JOSH","Framebuffer error: " + status);
             throw new IllegalStateException("GL_FRAMEBUFFER status incomplete");
         }
-        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,GLES20.GL_RENDERBUFFER,renderBufferActual);
+//        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,GLES20.GL_RENDERBUFFER,renderBufferActual);
+        checkErrors("x5");
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+        checkErrors("x5");
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        checkErrors("x5");
         return handleID;
     }
     private void checkErrors(String errorTag){
