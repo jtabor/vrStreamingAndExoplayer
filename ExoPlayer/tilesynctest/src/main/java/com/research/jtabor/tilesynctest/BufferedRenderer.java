@@ -105,9 +105,13 @@ static float baseTile[] =  {
 
     int glslProgram;
     int glslProgramOneTile;
-    int vPosition;
-    int vColor;
-    int texCoord;
+    int vPosition_render;
+    int vPosition_all;
+    int texCoord_render;
+    int texCoord_all;
+    int textureLocation_render;
+    int textureLocation_all;
+
 
     int textureHandles[];
 
@@ -177,6 +181,11 @@ static float baseTile[] =  {
         GLES20.glAttachShader(glslProgram,vertexShader);
         GLES20.glAttachShader(glslProgram,fragmentShader);
         GLES20.glLinkProgram(glslProgram);
+//setup pointers for program.
+        vPosition_render = GLES20.glGetAttribLocation(glslProgram, "vPosition");
+        texCoord_render = GLES20.glGetAttribLocation(glslProgram, "texCoord");
+        texCoord_render = GLES20.glGetUniformLocation(glslProgram, "s_texture");
+
 
         glslProgramOneTile = GLES20.glCreateProgram();
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER,vertexShaderSource);
@@ -184,6 +193,10 @@ static float baseTile[] =  {
         GLES20.glAttachShader(glslProgramOneTile,vertexShader);
         GLES20.glAttachShader(glslProgramOneTile,fragmentShader);
         GLES20.glLinkProgram(glslProgramOneTile);
+//setup pointers for program
+        vPosition_all = GLES20.glGetAttribLocation(glslProgramOneTile, "vPosition");
+        texCoord_all = GLES20.glGetAttribLocation(glslProgramOneTile, "texCoord");
+        texCoord_all = GLES20.glGetUniformLocation(glslProgramOneTile, "s_texture");
 
         GLES20.glGenTextures(3,renderTextures,0);
         for (int i = 0; i < 3; i++){
@@ -212,54 +225,36 @@ static float baseTile[] =  {
             GLES20.glActiveTexture(textureUnits[0]);
             checkErrors("2");
             GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureHandles[i]);
-            checkErrors("3");
-            int programTexHandle = GLES20.glGetUniformLocation(glslProgram, "s_texture");
-            checkErrors("4");
-            GLES20.glUniform1i(programTexHandle, 0);
+            GLES20.glUniform1i(textureLocation_render, 0);
             checkErrors("5");
-            vPosition = GLES20.glGetAttribLocation(glslProgram, "vPosition");
-            checkErrors("6");
-            GLES20.glEnableVertexAttribArray(vPosition);
+            GLES20.glEnableVertexAttribArray(vPosition_render);
             checkErrors("7");
-            GLES20.glVertexAttribPointer(vPosition, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[i]);
+            GLES20.glVertexAttribPointer(vPosition_render, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[i]);
             checkErrors("8");
-            texCoord = GLES20.glGetAttribLocation(glslProgram, "texCoord");
-            GLES20.glEnableVertexAttribArray(texCoord);
-            GLES20.glVertexAttribPointer(texCoord, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[i]);
-            vColor = GLES20.glGetUniformLocation(glslProgram, "vColor");
-            checkErrors("9");
-            GLES20.glUniform3fv(vColor, 1, color, 0);
-            checkErrors("10");
-
+            GLES20.glEnableVertexAttribArray(texCoord_render);
+            GLES20.glVertexAttribPointer(texCoord_render, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[i]);
             GLES20.glBindRenderbuffer(GLES20.GL_FRAMEBUFFER,FBOTexture);
 //            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, allTiles[i].length / 3);
             checkErrors("11");
-            GLES20.glDisableVertexAttribArray(vPosition);
         }
+
         GLES20.glUseProgram(glslProgramOneTile);
         GLES20.glActiveTexture(textureUnits[0]);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,renderTextures[0]);
-        int programTexHandle = GLES20.glGetUniformLocation(glslProgram, "s_texture");
         checkErrors("a4");
-
-        GLES20.glUniform1i(programTexHandle, 0);
-        checkErrors("a5");
-        vPosition = GLES20.glGetAttribLocation(glslProgram, "vPosition");
+        GLES20.glUniform1i(textureLocation_all, 0);
         checkErrors("a6");
-        GLES20.glEnableVertexAttribArray(vPosition);
+        GLES20.glEnableVertexAttribArray(vPosition_all);
         checkErrors("a7");
-        GLES20.glVertexAttribPointer(vPosition, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[0]);
+        GLES20.glVertexAttribPointer(vPosition_all, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[0]);
         checkErrors("a8");
-        texCoord = GLES20.glGetAttribLocation(glslProgram, "texCoord");
-        GLES20.glEnableVertexAttribArray(texCoord);
-        GLES20.glVertexAttribPointer(texCoord, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[0]);
+        GLES20.glEnableVertexAttribArray(texCoord_all);
+        GLES20.glVertexAttribPointer(texCoord_all, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[0]);
         //draw the render texture at the end.
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, allTiles[0].length / 3);
         checkErrors("a11");
-        GLES20.glDisableVertexAttribArray(vPosition);
-
     }
     private int loadShader(int type, String shaderSource){
         int shaderHandle = GLES20.glCreateShader(type);
