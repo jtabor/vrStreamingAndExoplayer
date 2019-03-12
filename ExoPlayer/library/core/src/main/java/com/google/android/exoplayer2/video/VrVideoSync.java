@@ -12,6 +12,7 @@ public class VrVideoSync {
     static int totalNumberOfTiles = 0;
     static int numberOfTiles = 0;
     static boolean[] readyToRender;
+    static boolean[] onFirstBuffer;
 
     static boolean writeToFirstBuffer = true;
     static long renderTime;
