@@ -71,14 +71,7 @@ public class BufferedRenderer implements GLSurfaceView.Renderer {
 
     private int vertexShader;
     private int fragmentShader;
-//    static float baseTile[] =  {
-//            0f,0f,0f,
-//            0.5f,0.5f,0f,
-//            0f,0.5f,0f,
-//            0f,0f,0f,
-//            0.5f,0f,0f,
-//            0.5f,0.5f,0f
-//    };
+
 static float baseTile[] =  {
         -1f,-1f,0f,
         0f,0f,0f,
@@ -95,6 +88,22 @@ static float baseTile[] =  {
             1f,1f,
             1f,0f
     };
+    static float bigTexCoords[] = {
+            1f,1f,
+            0f,0f,
+            1f,0f,
+            1f,1f,
+            0f,1f,
+            0f,0f
+    };
+    static float bigTile[] = {
+            1f,1f,0f,
+            -1f, -1f, 0f,
+            1f, -1f, 0f,
+            1f, 1f, 0f,
+            -1f, 1f, 0f,
+            -1f, -1f, 0f
+    };
 
     float color[] = {1f,0f,0f};
 
@@ -104,8 +113,8 @@ static float baseTile[] =  {
 
     int renderTextures[] = new int[3];
     int FBOTexture;
-    FloatBuffer vertexBuffer[] = new FloatBuffer[4];
-    FloatBuffer texCoordsBuffer[]  = new FloatBuffer[4];
+    FloatBuffer vertexBuffer[] = new FloatBuffer[5];
+    FloatBuffer texCoordsBuffer[]  = new FloatBuffer[5];
 
     int glslProgram;
     int glslProgramOneTile;
@@ -172,6 +181,19 @@ static float baseTile[] =  {
             texCoordsBuffer[i].position(0);
 
         }
+
+        ByteBuffer bb = ByteBuffer.allocateDirect(bigTile.length * 4);
+        bb.order(ByteOrder.nativeOrder());
+        vertexBuffer[4] = bb.asFloatBuffer();
+        vertexBuffer[4].put(bigTile);
+        vertexBuffer[4].position(0);
+
+        ByteBuffer bb2 = ByteBuffer.allocateDirect(bigTexCoords.length * 4);
+        bb2.order(ByteOrder.nativeOrder());
+        texCoordsBuffer[4] = bb2.asFloatBuffer();
+        texCoordsBuffer[4].put(bigTexCoords);
+        texCoordsBuffer[4].position(0);
+
         Looper.prepare();
         st = new SurfaceTest(4,context,1920,1080,true,false);
         st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60-tiles.mpd");
@@ -263,10 +285,10 @@ static float baseTile[] =  {
         checkErrors("a6");
         GLES20.glEnableVertexAttribArray(vPosition_all);
         checkErrors("a7");
-        GLES20.glVertexAttribPointer(vPosition_all, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[0]);
+        GLES20.glVertexAttribPointer(vPosition_all, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[4]);
         checkErrors("a8");
         GLES20.glEnableVertexAttribArray(texCoord_all);
-        GLES20.glVertexAttribPointer(texCoord_all, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[0]);
+        GLES20.glVertexAttribPointer(texCoord_all, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[4]);
         //draw the render texture at the end.
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
         GLES20.glViewport(0,0,frameWidth,frameHeight);

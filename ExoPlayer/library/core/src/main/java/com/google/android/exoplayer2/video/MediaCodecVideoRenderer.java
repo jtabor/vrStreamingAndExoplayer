@@ -571,8 +571,9 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
     long unadjustedFrameReleaseTimeNs = systemTimeNs + (earlyUs * 1000);
 
     // Apply a timestamp adjustment, if there is one.
-    long adjustedReleaseTimeNs = frameReleaseTimeHelper.adjustReleaseTime(
-        bufferPresentationTimeUs, unadjustedFrameReleaseTimeNs);
+    //long adjustedReleaseTimeNs = frameReleaseTimeHelper.adjustReleaseTime(
+//        bufferPresentationTimeUs, unadjustedFrameReleaseTimeNs);
+    long adjustedReleaseTimeNs = unadjustedFrameReleaseTimeNs;
     earlyUs = (adjustedReleaseTimeNs - systemTimeNs) / 1000;
 
     if (shouldDropBuffersToKeyframe(earlyUs, elapsedRealtimeUs)
