@@ -549,6 +549,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
 
     if (!renderedFirstFrame || forceRenderFrame) {
       forceRenderFrame = false;
+      Log.d("JOSH-METRICS","FRAME DROPPED!");
       if (Util.SDK_INT >= 21) {
         renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, System.nanoTime());
       } else {

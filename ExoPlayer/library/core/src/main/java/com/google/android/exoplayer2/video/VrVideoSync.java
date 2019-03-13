@@ -54,62 +54,36 @@ public class VrVideoSync {
     }
     //this should be called when the decoder renders a frame, should tell GL thread to render that.
     public void decoderRendered(long timestampTarget){ //call this after a buffer has been rendered.
-        Log.d("JOSH-SYNC","Decoder marked as dirty " + frameId);
-        int targetBuffer = -1;
         for (int i = 0; i < bufferLength; i++){
-            if (timestampTarget == bufferTimestampTarget[i]){
-                renderedToBuffer[frameId] = targetBuffer;
+            int bufferIndex = (i + nextFrame) % bufferLength;
+            if(!bufferReady[bufferIndex][frameId]){
+                renderedToBuffer[frameId] = i;
                 decoderDirty[frameId] = true;
                 return;
             }
-            //Might wanna add something here to try to claim the buffer again.
         }
-        decoderDirty[frameId] = false;  //Didn't find a valid frame, so we forget the rendering.
+        //Dropped.
+        decoderDirty[frameId] = false;
+
     }
 
     //this should be called when GL thread writes a frame to the renderTexture.
 
 
-    private boolean findAndClaimNextEmptyBuffer(long newTimestampeTarget){
-        Log.d("JOSH-SYNC","in findAndClaimBuffer.");
-
-        boolean toReturn = false;
-        for (int i = 0; i < bufferLength; i++){
-            if(!bufferInUse[i]){
-                Log.d("JOSH-SYNC","Tried to reserve buffer:" + i + " with timestamp: " + newTimestampeTarget);
-                bufferInUse[i] = true;
-                bufferTimestampTarget[i] = newTimestampeTarget;
-                toReturn = true;
-                break;
-            }
-        }
-        return toReturn;
-    }
     //this is called by rendering thread to check if it should render a frame (if there's a spot in the buffer for it)
     public boolean shouldRender(long timestampRenderTarget){
-        Log.d("JOSH-SYNC","in ShouldRender: " + timestampRenderTarget);
-        boolean isLate = true;
-        //Try to find an already allocated buffer.
+        if (decoderDirty[frameId]){
+            return false;
+        }
+
         for (int i = 0; i < bufferLength; i++){
-            if (bufferTimestampTarget[i] == timestampRenderTarget && bufferInUse[i]){
+            int bufferIndex = (i + nextFrame) & bufferLength;
+            if(!bufferReady[i][frameId]){
                 return true;
             }
         }
-
-        //Try to claim a new one if none are available.
-        if(findAndClaimNextEmptyBuffer(timestampRenderTarget)){
-            return true;//no empty buffer -> don't render yet.
-        }
-
-        //if any frames are earlier, then we're waiting for one to be available.
-        for (int i = 0; i < bufferLength; i++){
-            if (bufferTimestampTarget[i] < timestampRenderTarget){
-                return false;
-            }
-        }
-
-        //none available and all are more recent then the current frame.  Drop it.
-        return true;
+        //none available
+        return false;
     }
 
     //Renders the buffer we want to render to.
@@ -135,15 +109,10 @@ public class VrVideoSync {
         return true;
     }
     public int getReadyBuffer(){
-        int toReturn = -1;
-        long earliestTime = Long.MAX_VALUE;
-        for (int i = 0; i < bufferLength; i++){
-            if (bufferReadyToRender(i) && bufferTimestampTarget[i] < earliestTime){
-                toReturn = i;
-                earliestTime = bufferTimestampTarget[i];
-            }
+        if (bufferReadyToRender(nextFrame)){
+            return nextFrame;
         }
-        return toReturn;
+        return -1;
     }
 
     public void bufferRendered(int bufferId){
@@ -151,6 +120,10 @@ public class VrVideoSync {
             bufferReady[bufferId][i] = false;
         }
         bufferInUse[bufferId] = false;
+        nextFrame++;
+        if (nextFrame == bufferLength){
+            nextFrame  =0;
+        }
     }
 
 }
