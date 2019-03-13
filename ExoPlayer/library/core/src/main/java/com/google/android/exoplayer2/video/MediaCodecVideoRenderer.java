@@ -56,7 +56,7 @@ import java.nio.ByteBuffer;
 @TargetApi(16)
 public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Choreographer.FrameCallback {
 
-  private VrVideoSync videoSync = new VrVideoSync(4,this);
+  private VrVideoSync videoSync = new VrVideoSync();
   MediaCodec nextCodec;
   int nextBufferIndex;
   long nextPresentationTimeUs;
@@ -584,7 +584,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
       dropOutputBuffer(codec, bufferIndex, presentationTimeUs);
       return true;
     }
-
+  Log.d("JOSH-SYNC","EarlyUs: " + earlyUs);
     if (false){//if (Util.SDK_INT >= 21) {
       // Let the underlying framework time the release.
       if (earlyUs < 70000) {//JOSH: Changed from: if (earlyUs < 50000) {
@@ -594,27 +594,19 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
     } else {
       // We need to time the release ourselves.
       if (earlyUs < 16665) {
-        if (earlyUs > 17000) {
-          // We're a little too early to render the frame. Sleep until the frame can be rendered.
-          // Note: The 11ms threshold was chosen fairly arbitrarily.
-//          try {
-//            // Subtracting 10000 rather than 11000 ensures the sleep time will be at least 1ms.
-//            //Thread.sleep(earlyUs-1000);
-//          } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//          }
-          return false;
-        }
         boolean retVal = false;
-        if (videoSync.sholdRender(positionUs)){
+        if (videoSync.shouldRender(presentationTimeUs)){
           retVal = true;
-//          renderOutputBuffer(codec, bufferIndex, presentationTimeUs);
-          renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, adjustedReleaseTimeNs);
+          Log.d("JOSH-SYNC","Decoder Render Command.");
+          renderOutputBuffer(codec, bufferIndex, presentationTimeUs);
+//          renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, adjustedReleaseTimeNs);
         }
         nextBufferIndex = bufferIndex;
         nextCodec = codec;
         nextPresentationTimeUs = presentationTimeUs;
         frameReady = true;
+        Log.d("JOSH-SYNC","Decoder Render? " + retVal);
+
         return retVal;
       }
     }
@@ -633,7 +625,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
     frameReady =false;
     renderOutputBuffer(nextCodec, nextBufferIndex, nextPresentationTimeUs);
     onProcessedOutputBuffer(nextPresentationTimeUs);
-    videoSync.incrementFrameNumber();
   }
   /**
    * Called when an output buffer is successfully processed.
@@ -754,6 +745,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
     maybeNotifyVideoSizeChanged();
     TraceUtil.beginSection("releaseOutputBuffer");
     codec.releaseOutputBuffer(index, true);
+    videoSync.decoderRendered(presentationTimeUs);
     TraceUtil.endSection();
     decoderCounters.renderedOutputBufferCount++;
     consecutiveDroppedFrameCount = 0;
