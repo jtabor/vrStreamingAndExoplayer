@@ -21,25 +21,37 @@ public class VrVideoSync {
     static long bufferTimestampTarget[];
     static boolean bufferInUse[];
 
+    static long mostRecentTimestamp[];
+
     static int renderedToBuffer[];
     static boolean decoderDirty[];
 
+    static boolean gotFirstFrame[];
     int frameId;
     static int numberOfTilesRegistered = 0;
     static int numberOfTiles = 0;
 
+    static boolean doubleDirty[];
+
     int nextFrame = 0;
 
+    long lastRender = 0;
     //call this to init the class.
     public VrVideoSync(int BufferLength, int NumberOfTiles){
         bufferLength = BufferLength;
         numberOfTiles = NumberOfTiles;
-        bufferTimestampTarget = new long[bufferLength];
+        bufferTimestampTarget = new long[numberOfTiles];
         Arrays.fill(bufferTimestampTarget,0l);
         bufferInUse = new boolean[bufferLength];
         Arrays.fill(bufferInUse,false);
+        mostRecentTimestamp = new long[numberOfTiles];
+        Arrays.fill(mostRecentTimestamp,0);
+        doubleDirty = new boolean[numberOfTiles];
+        Arrays.fill(doubleDirty,false);
         renderedToBuffer = new int[numberOfTiles];
-        Arrays.fill(renderedToBuffer,0-1);
+        Arrays.fill(renderedToBuffer,-1);
+        gotFirstFrame = new boolean[numberOfTiles];
+        Arrays.fill(gotFirstFrame,false);
         decoderDirty = new boolean[numberOfTiles];
         Arrays.fill(decoderDirty,false);
         bufferReady = new boolean[bufferLength][numberOfTiles];
@@ -54,15 +66,24 @@ public class VrVideoSync {
     }
     //this should be called when the decoder renders a frame, should tell GL thread to render that.
     public void decoderRendered(long timestampTarget){ //call this after a buffer has been rendered.
+//        if (decoderDirty[frameId]){
+//            Log.e("AA","DOUBLE DIRTY!");
+//        }
         for (int i = 0; i < bufferLength; i++){
             int bufferIndex = (i + nextFrame) % bufferLength;
             if(!bufferReady[bufferIndex][frameId]){
-                renderedToBuffer[frameId] = i;
+                renderedToBuffer[frameId] = bufferIndex;
+                doubleDirty[frameId] = false;
+                bufferTimestampTarget[frameId] = timestampTarget;
                 decoderDirty[frameId] = true;
+                if (mostRecentTimestamp[frameId] != timestampTarget){
+                    Log.e("JOSH","TIMESTAMPS DON'T MATCH!");
+                }
                 return;
             }
         }
         //Dropped.
+        Log.e("AA","DROPPED FRAME!");
         decoderDirty[frameId] = false;
 
     }
@@ -72,6 +93,19 @@ public class VrVideoSync {
 
     //this is called by rendering thread to check if it should render a frame (if there's a spot in the buffer for it)
     public boolean shouldRender(long timestampRenderTarget){
+//        gotFirstFrame[frameId] = true;
+//        for (int i = 0; i < numberOfTiles; i++){
+//            if (!gotFirstFrame[i]){
+//                return true;
+//            }
+//        }
+//        if (numberOfTilesRegistered != numberOfTiles){
+//            return true;
+//        }
+        if (mostRecentTimestamp[frameId] > timestampRenderTarget){
+            Log.e("JOSH-DEBUG","Tried to render earlier timestamp!!");
+        }
+        mostRecentTimestamp[frameId] = timestampRenderTarget;
         if (decoderDirty[frameId]){
             return false;
         }
@@ -79,6 +113,10 @@ public class VrVideoSync {
         for (int i = 0; i < bufferLength; i++){
             int bufferIndex = (i + nextFrame) & bufferLength;
             if(!bufferReady[i][frameId]){
+                if (doubleDirty[frameId]){
+                    Log.d("AA","DOUBLE DIRTY!");
+                }
+                doubleDirty[frameId] = true;
                 return true;
             }
         }
@@ -89,6 +127,7 @@ public class VrVideoSync {
     //Renders the buffer we want to render to.
     public int getBufferToRenderTo(int frameId){
         if (decoderDirty[frameId]){
+            Log.d("AA","Frame: " + frameId + " Timestamp: " + bufferTimestampTarget[nextFrame] + " Buffer: " + renderedToBuffer[frameId]);
             return renderedToBuffer[frameId];
         }
         return -1;
@@ -109,7 +148,8 @@ public class VrVideoSync {
         return true;
     }
     public int getReadyBuffer(){
-        if (bufferReadyToRender(nextFrame)){
+        long elapsedTime = System.currentTimeMillis() - lastRender; //|| elapsedTime > 24
+        if (bufferReadyToRender(nextFrame) ){
             return nextFrame;
         }
         return -1;

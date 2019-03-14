@@ -524,11 +524,14 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
       boolean shouldSkip) throws ExoPlaybackException {
     while (pendingOutputStreamOffsetCount != 0
         && bufferPresentationTimeUs >= pendingOutputStreamOffsetsUs[0]) {
+      Log.e("J","have some offsets!!");
       outputStreamOffsetUs = pendingOutputStreamOffsetsUs[0];
       pendingOutputStreamOffsetCount--;
       System.arraycopy(pendingOutputStreamOffsetsUs, 1, pendingOutputStreamOffsetsUs, 0,
           pendingOutputStreamOffsetCount);
     }
+    //JOSH:
+    outputStreamOffsetUs = 0;
     long presentationTimeUs = bufferPresentationTimeUs - outputStreamOffsetUs;
 
     if (shouldSkip) {
@@ -549,7 +552,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
 
     if (!renderedFirstFrame || forceRenderFrame) {
       forceRenderFrame = false;
-      Log.d("JOSH-METRICS","FRAME DROPPED!");
+      Log.e("JOSH-METRICS","FRAME DROPPED!");
       if (Util.SDK_INT >= 21) {
         renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, System.nanoTime());
       } else {
@@ -585,7 +588,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
       dropOutputBuffer(codec, bufferIndex, presentationTimeUs);
       return true;
     }
-  Log.d("JOSH-SYNC","EarlyUs: " + earlyUs);
     if (false){//if (Util.SDK_INT >= 21) {
       // Let the underlying framework time the release.
       if (earlyUs < 70000) {//JOSH: Changed from: if (earlyUs < 50000) {
@@ -598,7 +600,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
         boolean retVal = false;
         if (videoSync.shouldRender(presentationTimeUs)){
           retVal = true;
-          Log.d("JOSH-SYNC","Decoder Render Command.");
           renderOutputBuffer(codec, bufferIndex, presentationTimeUs);
 //          renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, adjustedReleaseTimeNs);
         }
@@ -606,7 +607,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
         nextCodec = codec;
         nextPresentationTimeUs = presentationTimeUs;
         frameReady = true;
-        Log.d("JOSH-SYNC","Decoder Render? " + retVal);
 
         return retVal;
       }
@@ -647,7 +647,9 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
    *     measured at the start of the current iteration of the rendering loop.
    */
   protected boolean shouldDropOutputBuffer(long earlyUs, long elapsedRealtimeUs) {
-    return isBufferLate(earlyUs);
+    return false;
+
+//    return isBufferLate(earlyUs);
   }
 
   /**
@@ -660,7 +662,8 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
    *     measured at the start of the current iteration of the rendering loop.
    */
   protected boolean shouldDropBuffersToKeyframe(long earlyUs, long elapsedRealtimeUs) {
-    return isBufferVeryLate(earlyUs);
+    return false;
+    //return isBufferVeryLate(earlyUs);
   }
 
   /**
@@ -672,6 +675,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
    */
   protected void skipOutputBuffer(MediaCodec codec, int index, long presentationTimeUs) {
     TraceUtil.beginSection("skipVideoBuffer");
+    Log.e("JOSH","skipOutputBuffer");
     codec.releaseOutputBuffer(index, false);
     TraceUtil.endSection();
     decoderCounters.skippedOutputBufferCount++;
@@ -686,6 +690,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
    */
   protected void dropOutputBuffer(MediaCodec codec, int index, long presentationTimeUs) {
     TraceUtil.beginSection("dropVideoBuffer");
+    Log.e("JOSH","dropOutputBuffer");
     codec.releaseOutputBuffer(index, false);
     TraceUtil.endSection();
     updateDroppedBufferCounters(1);
@@ -709,6 +714,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
     if (droppedSourceBufferCount == 0) {
       return false;
     }
+    Log.e("JOSH","maybeDropBuffersToKeyframe");
     decoderCounters.droppedToKeyframeCount++;
     // We dropped some buffers to catch up, so update the decoder counters and flush the codec,
     // which releases all pending buffers buffers including the current output buffer.
