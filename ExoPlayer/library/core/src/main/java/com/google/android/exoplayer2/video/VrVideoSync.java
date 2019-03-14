@@ -31,6 +31,7 @@ public class VrVideoSync {
     static int numberOfTilesRegistered = 0;
     static int numberOfTiles = 0;
 
+    static boolean requestDropFrame[];
     static boolean doubleDirty[];
 
     int nextFrame = 0;
@@ -54,6 +55,8 @@ public class VrVideoSync {
         Arrays.fill(gotFirstFrame,false);
         decoderDirty = new boolean[numberOfTiles];
         Arrays.fill(decoderDirty,false);
+        requestDropFrame = new boolean[numberOfTiles];
+        Arrays.fill(requestDropFrame,false);
         bufferReady = new boolean[bufferLength][numberOfTiles];
         for (int i = 0; i < bufferLength; i ++){
             Arrays.fill(bufferReady[i],false);
@@ -90,7 +93,14 @@ public class VrVideoSync {
 
     //this should be called when GL thread writes a frame to the renderTexture.
 
+    public boolean shouldDropFrame(){ //called if a decoder gets too far behind.
+        if (requestDropFrame[frameId]){
+            requestDropFrame[frameId] = false;
+            return true;
+        }
 
+        return false;
+    }
     //this is called by rendering thread to check if it should render a frame (if there's a spot in the buffer for it)
     public boolean shouldRender(long timestampRenderTarget){
 //        gotFirstFrame[frameId] = true;
@@ -147,16 +157,20 @@ public class VrVideoSync {
         }
         return true;
     }
+
     public int getReadyBuffer(){
         long elapsedTime = System.currentTimeMillis() - lastRender; //|| elapsedTime > 24
-        if (bufferReadyToRender(nextFrame) ){
-            return nextFrame;
-        }
-        return -1;
+        return nextFrame;
+
+//        return -1;
     }
 
     public void bufferRendered(int bufferId){
+
         for (int i = 0; i < numberOfTiles; i++){
+//            if (!bufferReady[bufferId][i]){
+//                requestDropFrame[i] = true;
+//            }
             bufferReady[bufferId][i] = false;
         }
         bufferInUse[bufferId] = false;

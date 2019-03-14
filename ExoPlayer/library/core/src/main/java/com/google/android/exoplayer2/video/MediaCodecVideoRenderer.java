@@ -530,11 +530,11 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
       System.arraycopy(pendingOutputStreamOffsetsUs, 1, pendingOutputStreamOffsetsUs, 0,
           pendingOutputStreamOffsetCount);
     }
-    //JOSH:
-    outputStreamOffsetUs = 0;
+
     long presentationTimeUs = bufferPresentationTimeUs - outputStreamOffsetUs;
 
     if (shouldSkip) {
+      Log.e("JOSH","BUFFER SKIPPED!");
       skipOutputBuffer(codec, bufferIndex, presentationTimeUs);
       return true;
     }
@@ -647,7 +647,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
    *     measured at the start of the current iteration of the rendering loop.
    */
   protected boolean shouldDropOutputBuffer(long earlyUs, long elapsedRealtimeUs) {
-    return false;
+    return videoSync.shouldDropFrame();
 
 //    return isBufferLate(earlyUs);
   }
