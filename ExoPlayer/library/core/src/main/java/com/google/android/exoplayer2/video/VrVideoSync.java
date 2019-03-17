@@ -121,8 +121,8 @@ public class VrVideoSync {
         }
 
         for (int i = 0; i < bufferLength; i++){
-            int bufferIndex = (i + nextFrame) & bufferLength;
-            if(!bufferReady[i][frameId]){
+            int bufferIndex = (i + nextFrame) % bufferLength;
+            if(!bufferReady[bufferIndex][frameId]){
                 if (doubleDirty[frameId]){
                     Log.d("AA","DOUBLE DIRTY!");
                 }

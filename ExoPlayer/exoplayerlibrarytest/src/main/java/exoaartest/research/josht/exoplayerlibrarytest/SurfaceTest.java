@@ -191,12 +191,12 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
     }
 
     public void updateTexture(){
-        Log.d("JOSH-METRICS","Render: " + System.currentTimeMillis());
+//        Log.d("JOSH-METRICS","Render: " + System.currentTimeMillis());
         boolean shouldRender = true;
         for (int i = 0; i < numberOfTiles; i++){
             if (!frameReady[i]){
                 shouldRender = false;
-                Log.d("JOSH-METRICS","NotRendered: " + System.currentTimeMillis());
+//                Log.d("JOSH-METRICS","NotRendered: " + System.currentTimeMillis());
 //                return;
             }
         }

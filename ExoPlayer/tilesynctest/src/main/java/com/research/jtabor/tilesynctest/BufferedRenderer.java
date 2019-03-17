@@ -265,7 +265,7 @@ static float baseTile[] =  {
                 Log.d("JOSH-SYNC","rendering buffer: " + i + " to Buffer: " + bufferTarget);
             }
             else{
-                Log.d("JOSH-SYNC","continued");
+//                Log.d("JOSH-SYNC","continued");
                 continue;
 
             }
