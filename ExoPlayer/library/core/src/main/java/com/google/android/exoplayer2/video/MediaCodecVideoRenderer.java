@@ -584,7 +584,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
         && maybeDropBuffersToKeyframe(codec, bufferIndex, presentationTimeUs, positionUs)) {
       forceRenderFrame = true;
       return false;
-    } else if (shouldDropOutputBuffer(earlyUs, elapsedRealtimeUs)) {
+    } else if (shouldDropOutputBuffer(earlyUs, presentationTimeUs)) {
       dropOutputBuffer(codec, bufferIndex, presentationTimeUs);
       return true;
     }
@@ -597,11 +597,16 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
     } else {
       // We need to time the release ourselves.
       if (earlyUs < 16665) {
+//        Log.d("JOSH","Early: " + earlyUs);
         boolean retVal = false;
-        if (videoSync.shouldRender(presentationTimeUs)){
+        int shouldRender = videoSync.shouldRender(presentationTimeUs);
+        if (shouldRender == 1){
           retVal = true;
           renderOutputBuffer(codec, bufferIndex, presentationTimeUs);
 //          renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, adjustedReleaseTimeNs);
+        } else if (shouldRender == 2) {
+          dropOutputBuffer(codec,bufferIndex,presentationTimeUs);
+          retVal = true;
         }
         nextBufferIndex = bufferIndex;
         nextCodec = codec;
@@ -643,11 +648,11 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
    *
    * @param earlyUs The time until the buffer should be presented in microseconds. A negative value
    *     indicates that the buffer is late.
-   * @param elapsedRealtimeUs {@link android.os.SystemClock#elapsedRealtime()} in microseconds,
+   * @param presentationTime {@link android.os.SystemClock#elapsedRealtime()} in microseconds,
    *     measured at the start of the current iteration of the rendering loop.
    */
-  protected boolean shouldDropOutputBuffer(long earlyUs, long elapsedRealtimeUs) {
-    return videoSync.shouldDropFrame();
+  protected boolean shouldDropOutputBuffer(long earlyUs, long presentationTime) {
+    return videoSync.shouldDropFrame(  isBufferLate(earlyUs),presentationTime);
 
 //    return isBufferLate(earlyUs);
   }
@@ -859,7 +864,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
 
   private static boolean isBufferLate(long earlyUs) {
     // Class a buffer as late if it should have been presented more than 30 ms ago.
-    return earlyUs < -30000;
+    return earlyUs < -20000;
   }
 
   private static boolean isBufferVeryLate(long earlyUs) {
