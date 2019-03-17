@@ -195,6 +195,11 @@ public class VrVideoSync {
     }
 
     public int getReadyBuffer(){
+        for (int i = 0; i < numberOfTiles; i++){
+            if (!bufferReady[nextFrame][i]){
+                return -1;
+            }
+        }
         long elapsedTime = System.currentTimeMillis() - lastRender; //|| elapsedTime > 24
         return nextFrame;
 

@@ -202,7 +202,7 @@ static float baseTile[] =  {
 
         Looper.prepare();
         st = new SurfaceTest(4,context,1920,1080,true,false);
-        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60-tiles.mpd");
+        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_4k_60-tiles.mpd");
         textureHandles = st.getTextureIds();
         st.initExoplayer();
         st.startVideo();
