@@ -70,6 +70,7 @@ public class BufferedRenderer implements GLSurfaceView.Renderer {
             "}";
 
 
+    int numberOfTiles = 4;
     private int vertexShader;
     private int fragmentShader;
 
@@ -117,8 +118,8 @@ static float baseTile[] =  {
     int renderTextures[] = new int[bufferLength];
     int FBOTexture[] = new int [bufferLength];
 
-    FloatBuffer vertexBuffer[] = new FloatBuffer[5];
-    FloatBuffer texCoordsBuffer[]  = new FloatBuffer[5];
+    FloatBuffer vertexBuffer[] = new FloatBuffer[numberOfTiles + 1];
+    FloatBuffer texCoordsBuffer[]  = new FloatBuffer[numberOfTiles + 1];
 
     int glslProgram;
     int glslProgramOneTile;
@@ -151,6 +152,14 @@ static float baseTile[] =  {
         }
         return toReturn;
     }
+    private float[] scaleArrayInY(float[] input, float scaleAmount){
+        float[] toReturn = new float[input.length];
+        for (int i = 0; i < input.length; i = i+3){
+            toReturn[i+1] = input[i+1]*scaleAmount; //only mess with y.
+
+        }
+        return toReturn;
+    }
     public void setContext(Context newContext){
         context = newContext;
     }
@@ -159,19 +168,26 @@ static float baseTile[] =  {
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
 
         //Generate the texcoords and vertex coords for our 4 tiles.  (This is hardcoded, might want to make a more robust one later..
-        allTiles = new float[4][baseTile.length];
-        allTexCoords = new float[4][oneTexCoords.length];
-        System.arraycopy(baseTile,0,allTiles[0],0,baseTile.length);
-        System.arraycopy(oneTexCoords,0,allTexCoords[0],0,oneTexCoords.length);
-        System.arraycopy(addToArray(baseTile,0f,1f,0f),0,allTiles[1],0,baseTile.length);
-        System.arraycopy(oneTexCoords,0,allTexCoords[1],0,oneTexCoords.length);
-        System.arraycopy(addToArray(baseTile,1f,1f,0f),0,allTiles[2],0,baseTile.length);
-        System.arraycopy(oneTexCoords,0,allTexCoords[2],0,oneTexCoords.length);
-        System.arraycopy(addToArray(baseTile,1f,0f,0f),0,allTiles[3],0,baseTile.length);
-        System.arraycopy(oneTexCoords,0,allTexCoords[3],0,oneTexCoords.length);
+        allTiles = new float[numberOfTiles][baseTile.length];
+        allTexCoords = new float[numberOfTiles][oneTexCoords.length];
 
+        if (numberOfTiles == 1){ //One is special case..  Since it's full screen.  All others divided along x.
 
-        for (int i = 0; i < 4; i++) {
+        }
+        int numberOfTilesDisplayed = numberOfTiles;
+        if ((numberOfTiles%2)==1){ //round up nearest even number.
+            numberOfTilesDisplayed++;
+        }
+        float yScaleFactor = ((float)numberOfTilesDisplayed)/2f;
+
+        for (int i = 0; i < numberOfTilesDisplayed/2; i++){
+            //Do the left side.
+
+            //Do the right side.
+
+        }
+
+        for (int i = 0; i < numberOfTiles; i++) {
             ByteBuffer bb = ByteBuffer.allocateDirect(allTiles[i].length * 4);
             bb.order(ByteOrder.nativeOrder());
             vertexBuffer[i] = bb.asFloatBuffer();
@@ -198,10 +214,10 @@ static float baseTile[] =  {
         texCoordsBuffer[4].put(bigTexCoords);
         texCoordsBuffer[4].position(0);
 
-        videoSync = new VrVideoSync(2,4);
+        videoSync = new VrVideoSync(2,numberOfTiles);
 
         Looper.prepare();
-        st = new SurfaceTest(4,context,1920,1080,true,false);
+        st = new SurfaceTest(numberOfTiles,context,1920,1080,true,false);
         st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_4k_60-tiles.mpd");
         textureHandles = st.getTextureIds();
         st.initExoplayer();
@@ -258,7 +274,7 @@ static float baseTile[] =  {
         //display textures on screen.  Decide when to do it.
         st.updateTexture();
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < numberOfTiles; i++) {
             int bufferTarget = 0;
             if (videoSync.getBufferToRenderTo(i) > -1){
                 bufferTarget = videoSync.getBufferToRenderTo(i);
