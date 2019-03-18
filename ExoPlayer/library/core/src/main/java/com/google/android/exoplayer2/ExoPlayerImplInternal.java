@@ -77,8 +77,8 @@ import java.io.IOException;
   private static final int MSG_SET_SHUFFLE_ENABLED = 13;
 
   private static final int PREPARING_SOURCE_INTERVAL_MS = 10;
-  private static final int RENDERING_INTERVAL_MS = 1;
-  private static final int IDLE_INTERVAL_MS = 1;
+  private static final int RENDERING_INTERVAL_MS = 10;
+  private static final int IDLE_INTERVAL_MS = 1000;
 
   /**
    * Limits the maximum number of periods to buffer ahead of the current playing period. The

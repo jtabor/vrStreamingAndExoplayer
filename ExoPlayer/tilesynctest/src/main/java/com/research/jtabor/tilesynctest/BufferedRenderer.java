@@ -30,6 +30,9 @@ import exoaartest.research.josht.exoplayerlibrarytest.SurfaceTest;
 
 public class BufferedRenderer implements GLSurfaceView.Renderer {
 
+    int numberOfTiles = 5;
+    long loadTimestamp = 0l;
+
     SurfaceTest st;
     Context context;
 
@@ -70,7 +73,7 @@ public class BufferedRenderer implements GLSurfaceView.Renderer {
             "}";
 
 
-    int numberOfTiles = 4;
+
     private int vertexShader;
     private int fragmentShader;
 
@@ -164,6 +167,17 @@ static float baseTile[] =  {
         context = newContext;
     }
     //create the textures here and link them to Exoplayer
+    private float[] generateBaseTile(float xWidth, float yWidth){
+        float[] toReturn = {
+                -1f, -1f, 0f,
+                -1f + xWidth, -1f + yWidth, 0f,
+                -1f, -1f + yWidth, 0f,
+                -1f, -1f, 0f,
+                -1f + xWidth, -1f, 0f,
+                -1f + xWidth, -1f + yWidth, 0f
+        };
+        return toReturn;
+    }
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
 
@@ -178,11 +192,16 @@ static float baseTile[] =  {
         if ((numberOfTiles%2)==1){ //round up nearest even number.
             numberOfTilesDisplayed++;
         }
-        float yScaleFactor = ((float)numberOfTilesDisplayed)/2f;
-
+        float yWidth = 2f/(((float)numberOfTilesDisplayed)/2f);
+        baseTile = generateBaseTile(1,yWidth);
         for (int i = 0; i < numberOfTilesDisplayed/2; i++){
             //Do the left side.
-
+            System.arraycopy(addToArray(baseTile,0f,((float)i)*yWidth,0f),0,allTiles[2*i],0,baseTile.length);
+            System.arraycopy(oneTexCoords,0,allTexCoords[2*i],0,oneTexCoords.length);
+            if( 2*i + 1 != numberOfTiles) {
+                System.arraycopy(addToArray(baseTile, 1f, ((float) i) * yWidth, 0f), 0, allTiles[2 * i + 1], 0, baseTile.length);
+                System.arraycopy(oneTexCoords, 0, allTexCoords[2 * i + 1], 0, oneTexCoords.length);
+            }
             //Do the right side.
 
         }
@@ -204,23 +223,26 @@ static float baseTile[] =  {
 
         ByteBuffer bb = ByteBuffer.allocateDirect(bigTile.length * 4);
         bb.order(ByteOrder.nativeOrder());
-        vertexBuffer[4] = bb.asFloatBuffer();
-        vertexBuffer[4].put(bigTile);
-        vertexBuffer[4].position(0);
+        vertexBuffer[numberOfTiles] = bb.asFloatBuffer();
+        vertexBuffer[numberOfTiles].put(bigTile);
+        vertexBuffer[numberOfTiles].position(0);
 
         ByteBuffer bb2 = ByteBuffer.allocateDirect(bigTexCoords.length * 4);
         bb2.order(ByteOrder.nativeOrder());
-        texCoordsBuffer[4] = bb2.asFloatBuffer();
-        texCoordsBuffer[4].put(bigTexCoords);
-        texCoordsBuffer[4].position(0);
+        texCoordsBuffer[numberOfTiles] = bb2.asFloatBuffer();
+        texCoordsBuffer[numberOfTiles].put(bigTexCoords);
+        texCoordsBuffer[numberOfTiles].position(0);
 
         videoSync = new VrVideoSync(2,numberOfTiles);
 
         Looper.prepare();
         st = new SurfaceTest(numberOfTiles,context,1920,1080,true,false);
-        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_4k_60-tiles.mpd");
+//        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60-tiles.mpd");
+//        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60.mp4");
+        st.init("http://pages.cs.wisc.edu/~tabor/newV3a-tiles.mpd");
         textureHandles = st.getTextureIds();
         st.initExoplayer();
+        loadTimestamp = System.currentTimeMillis();
         st.startVideo();
 
         glslProgram = GLES20.glCreateProgram();
@@ -271,6 +293,12 @@ static float baseTile[] =  {
 
     @Override
     public void onDrawFrame(GL10 gl10) {
+//        if (System.currentTimeMillis() < loadTimestamp + HOLDOFF_MS_BEFORE_PLAY){
+//            return;
+//        }
+//        else{
+//            st.startVideo();
+//        }
         //display textures on screen.  Decide when to do it.
         st.updateTexture();
 
@@ -278,7 +306,7 @@ static float baseTile[] =  {
             int bufferTarget = 0;
             if (videoSync.getBufferToRenderTo(i) > -1){
                 bufferTarget = videoSync.getBufferToRenderTo(i);
-                Log.d("JOSH-SYNC","rendering buffer: " + i + " to Buffer: " + bufferTarget);
+                //Log.d("JOSH-SYNC","rendering buffer: " + i + " to Buffer: " + bufferTarget);
             }
             else{
 //                Log.d("JOSH-SYNC","continued");
@@ -323,10 +351,10 @@ static float baseTile[] =  {
         checkErrors("a6");
         GLES20.glEnableVertexAttribArray(vPosition_all);
         checkErrors("a7");
-        GLES20.glVertexAttribPointer(vPosition_all, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[4]);
+        GLES20.glVertexAttribPointer(vPosition_all, 3, GLES20.GL_FLOAT, false, 3 * 4, vertexBuffer[numberOfTiles]);
         checkErrors("a8");
         GLES20.glEnableVertexAttribArray(texCoord_all);
-        GLES20.glVertexAttribPointer(texCoord_all, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[4]);
+        GLES20.glVertexAttribPointer(texCoord_all, 2, GLES20.GL_FLOAT, false, 2 * 4, texCoordsBuffer[numberOfTiles]);
         //draw the render texture at the end.
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         GLES20.glViewport(0, 0, frameWidth, frameHeight);
