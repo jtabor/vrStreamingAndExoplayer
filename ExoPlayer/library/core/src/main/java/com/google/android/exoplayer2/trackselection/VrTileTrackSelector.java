@@ -593,8 +593,8 @@ protected void selectVideoTracks(Integer[] videoRendererIndices, RendererCapabil
 //      trackSelections[i] = new VrTileTrackSelection(group, new int[] {0,1},0);
       Log.d("JOSH","size: " + groupArray.get(0).length + " s: " + trackIndices.length + " i: " + i);
 //      FixedTrackSelection fSelection = new FixedTrackSelection(group,trackIndices[i]);
-      FixedTrackSelection fSelection = new FixedTrackSelection(group,trackIndices[i]);  //USE THIS FOR NON-DASH
-//      FixedTrackSelection fSelection = new FixedTrackSelection(group,0);   //USE THIS FOR DASH
+//      FixedTrackSelection fSelection = new FixedTrackSelection(group,trackIndices[i]);  //USE THIS FOR DASH
+      FixedTrackSelection fSelection = new FixedTrackSelection(group,0);   //USE THIS FOR NON-DASH
       videoRendererSelections[videoRendererIndices[i]] = fSelection;
     }
 

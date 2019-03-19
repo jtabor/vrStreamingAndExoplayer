@@ -23,11 +23,13 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCrypto;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Choreographer;
 import android.view.Surface;
@@ -518,6 +520,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
         && getMaxInputSize(newFormat) <= codecMaxValues.inputSize;
   }
 
+  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
   @Override
   protected boolean processOutputBuffer(long positionUs, long elapsedRealtimeUs, MediaCodec codec,
       ByteBuffer buffer, int bufferIndex, int bufferFlags, long bufferPresentationTimeUs,
@@ -541,6 +544,8 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
 
     long earlyUs = bufferPresentationTimeUs - positionUs;
     if (surface == dummySurface) {
+      Log.e("JOSH","BUFFER SKIPPED!");
+
       // Skip frames in sync with playback, so we'll be at the right frame if the mode changes.
       if (isBufferLate(earlyUs)) {
         forceRenderFrame = false;
@@ -552,12 +557,17 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
 
     if (!renderedFirstFrame || forceRenderFrame) {
       forceRenderFrame = false;
-      Log.e("JOSH-METRICS","FRAME DROPPED!");
-      if (Util.SDK_INT >= 21) {
-        renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, System.nanoTime());
-      } else {
+      Log.e("JOSH-METRICS","FRAME DROPPED! " + codec.getCodecInfo().getName());
+
+//      if (Util.SDK_INT >= 21) {
+//        renderOutputBufferV21(codec, bufferIndex, presentationTimeUs, System.nanoTime());
+//      } else {
+
         renderOutputBuffer(codec, bufferIndex, presentationTimeUs);
-      }
+//      }
+//      dropOutputBuffer(codec,bufferIndex,presentationTimeUs);
+//      videoSync.decoderRendered(presentationTimeUs);
+      videoSync.markDecoderStarted();
       return true;
     }
 
@@ -596,7 +606,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer implements Chore
       }
     } else {
       // We need to time the release ourselves.
-      if (earlyUs < 16665) {
+      if (earlyUs < 16665) { //16665
 //        Log.d("JOSH","Early: " + earlyUs);
         boolean retVal = false;
         int shouldRender = videoSync.shouldRender(presentationTimeUs);

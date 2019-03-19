@@ -28,13 +28,14 @@ public class VrVideoSync {
 
     static int renderedToBuffer[];
     static boolean decoderDirty[];
-
+    static boolean decoderStarted[];
     static boolean gotFirstFrame[];
     int frameId;
     static int numberOfTilesRegistered = 0;
     static int numberOfTiles = 0;
 
     static boolean hasDroppedFrame[];
+    static boolean needsCatchUp[];
     static boolean doubleDirty[];
 
     static int nextFrame = 0;
@@ -47,7 +48,7 @@ public class VrVideoSync {
     static long dropGaurd = 0;
 
     static long newestTimestamp = 0;
-
+    static long lastRenderedTimestamp = 0;
     static final long DROP_GUARD_INTERVAL = 18000; //60Hz.
 //    static final long DROP_GUARD_INTERVAL = 36000; //30Hz.
     static final long NEW_FRAME_GUARD = 14000; //60Hz.
@@ -68,6 +69,8 @@ public class VrVideoSync {
         Arrays.fill(mostRecentTimestamp,0);
         doubleDirty = new boolean[numberOfTiles];
         Arrays.fill(doubleDirty,false);
+        decoderStarted = new boolean[numberOfTiles];
+        Arrays.fill(decoderStarted,false);
         renderedToBuffer = new int[numberOfTiles];
         Arrays.fill(renderedToBuffer,-1);
         gotFirstFrame = new boolean[numberOfTiles];
@@ -75,7 +78,7 @@ public class VrVideoSync {
         decoderDirty = new boolean[numberOfTiles];
         Arrays.fill(decoderDirty,false);
         hasDroppedFrame = new boolean[numberOfTiles];
-        Arrays.fill(hasDroppedFrame,false);
+        Arrays.fill(hasDroppedFrame,true);
         bufferReady = new boolean[bufferLength][numberOfTiles];
         for (int i = 0; i < bufferLength; i ++){
             Arrays.fill(bufferReady[i],false);
@@ -95,21 +98,24 @@ public class VrVideoSync {
     }
     //this should be called when the decoder renders a frame, should tell GL thread to render that.
     public void decoderRendered(long timestampTarget){ //call this after a buffer has been rendered.
+//        Log.d("DD","decoder: " + frameId + " indecoderRendered: " + timestampTarget);
 //        if (decoderDirty[frameId]){
 //            Log.e("AA","DOUBLE DIRTY!");
 //        }
 //        Log.d("JOSH","Rendered ts: " + timestampTarget);
-        if (timestampTarget == dropTimestamp){
-            return;
-        }
+//        if (timestampTarget == dropTimestamp){
+//            return;
+//        }
         for (int i = 0; i < bufferLength; i++){
             int bufferIndex = (i + nextFrame) % bufferLength;
             if(!bufferReady[bufferIndex][frameId]){
                 bufferInUse[bufferIndex] = true;
                 renderedToBuffer[frameId] = bufferIndex;
+//                Log.d("DD","Fame " + frameId + " Rendered to buffer: " + bufferIndex);
                 renderedTimestamp[bufferIndex][frameId] = timestampTarget;
                 doubleDirty[frameId] = false;
                 bufferTimestampTarget[frameId] = timestampTarget;
+//                Log.d("DD","frame: " + frameId + " buff:" + bufferIndex + " target: " + timestampTarget);
                 decoderDirty[frameId] = true;
                 if (mostRecentTimestamp[frameId] != timestampTarget){
                     Log.e("JOSH","TIMESTAMPS DON'T MATCH!");
@@ -123,36 +129,50 @@ public class VrVideoSync {
 
     }
 
+    public void markDecoderStarted(){
+        decoderStarted[frameId] = true;
+    }
+
+    public boolean areDecodersReadyToStart(){
+        for (int i = 0; i < numberOfTiles; i++){
+            if (!decoderStarted[frameId]){
+                return false;
+            }
+        }
+        return true;
+    }
     //this should be called when GL thread writes a frame to the renderTexture.
     static boolean isDroppingFrames = false;
+
     public boolean shouldDropFrame(boolean shouldDrop, long timestamp){ //called if a decoder gets too far behind.
-        return false;
-//        if (DISABLED) {
-//            return shouldDrop;
-//        }
-//        if (shouldDrop && (timestamp > dropGaurd)){
-//            if (timestamp <= newestTimestamp){
-//                return false;
-//            }
-//            else if (timestamp > dropGaurd ){
-//                for (int i = 0; i < numberOfTiles; i++){
-//                    hasDroppedFrame[i] = false;
-//                }
-//                dropTimestamp = timestamp;
-//                dropGaurd = timestamp + DROP_GUARD_INTERVAL;
-//                isDroppingFrames = true;
-//            }
-//        }
-//        if ((timestamp >= dropTimestamp) && (!hasDroppedFrame[frameId])) {
-////            Log.d("JOSH","DROPPED FRAME: " + timestamp + " frame: " + frameId);
-//            framesDropped++;
-//            hasDroppedFrame[frameId] = true;
-//            return true;
-//        }
 //        return false;
+        if (DISABLED) {
+            return shouldDrop;
+        }
+        if (shouldDrop && (timestamp > dropGaurd)){
+            if (timestamp <= newestTimestamp){
+                return false;
+            }
+            else if (timestamp > dropGaurd ){
+                for (int i = 0; i < numberOfTiles; i++){
+                    hasDroppedFrame[i] = false;
+                }
+                dropTimestamp = timestamp;
+                dropGaurd = timestamp + DROP_GUARD_INTERVAL;
+                isDroppingFrames = true;
+            }
+        }
+        if ((timestamp >= dropTimestamp) && (!hasDroppedFrame[frameId])) {
+//            Log.d("JOSH","DROPPED FRAME: " + timestamp + " frame: " + frameId);
+            framesDropped++;
+            hasDroppedFrame[frameId] = true;
+            return true;
+        }
+        return false;
     }
     //this is called by rendering thread to check if it should render a frame (if there's a spot in the buffer for it)
     public int shouldRender(long timestampRenderTarget){
+//        Log.d("DD","decoder: " + frameId + " inshouldRender: " + timestampRenderTarget);
         if(DISABLED) {
             return 1;
         }
@@ -165,8 +185,14 @@ public class VrVideoSync {
 //        if (numberOfTilesRegistered != numberOfTiles){
 //            return true;
 //        }
-
+//        if (!hasDroppedFrame[frameId]){
+//            hasDroppedFrame[frameId] = true;
+//            return 2;
+//        }
         //ENABLE
+        if (timestampRenderTarget < lastRenderedTimestamp){
+            return 2;
+        }
         if (mostRecentTimestamp[frameId] > timestampRenderTarget){
             Log.e("JOSH-DEBUG","Tried to render earlier timestamp!!");
         }
@@ -203,13 +229,14 @@ public class VrVideoSync {
     //Renders the buffer we want to render to.
     public int getBufferToRenderTo(int frameId){
         if (decoderDirty[frameId]){
-//            Log.d("AA","Frame: " + frameId + " Timestamp: " + bufferTimestampTarget[nextFrame] + " Buffer: " + renderedToBuffer[frameId]);
+            //            Log.d("AA","Frame: " + frameId + " Timestamp: " + bufferTimestampTarget[nextFrame] + " Buffer: " + renderedToBuffer[frameId]);
             return renderedToBuffer[frameId];
         }
         return -1;
     }
 
     public void renderedToTexture(int frameId){
+//        Log.d("DD","Frame: " + frameId + " in renderedToTexture");
         bufferReady[renderedToBuffer[frameId]][frameId] = true;
         renderedToBuffer[frameId] = -1;
         decoderDirty[frameId] = false;
@@ -233,7 +260,7 @@ public class VrVideoSync {
     }
 
     public void bufferRendered(int bufferId){
-
+//        Log.d("DD","in buffer rendered: " + bufferId);
         for (int i = 0; i < numberOfTiles; i++){
 //            if (!bufferReady[bufferId][i]){
 //                hasDroppedFrame[i] = true;
@@ -242,17 +269,16 @@ public class VrVideoSync {
         }
         bufferInUse[bufferId] = false;
         nextFrame = (nextFrame + 1)%bufferLength;
-
+        lastRenderedTimestamp = 0;
         String allTimestamps = "";
-        long greatestTimestamp = 0;
         for (int i = 0; i < numberOfTiles; i++){
             allTimestamps = allTimestamps + renderedTimestamp[bufferId][i] + ",";
-            if (renderedTimestamp[bufferId][i] > greatestTimestamp){
-                greatestTimestamp = renderedTimestamp[bufferId][i];
+            if (renderedTimestamp[bufferId][i] > lastRenderedTimestamp){
+                lastRenderedTimestamp = renderedTimestamp[bufferId][i];
             }
         }
 //        for (int i = 0; i < numberOfTiles; i++){
-//            if (renderedTimestamp[bufferId][i] < greatestTimestamp){
+//            if (renderedTimestamp[bufferId][i] < lastRenderedTimestamp){
 //                hasDroppedFrame[i] = false;
 //            }
 //        }
@@ -260,7 +286,7 @@ public class VrVideoSync {
         long elapsedTime = curTime - lastRender; //|| elapsedTime > 24
         lastRender = curTime;
 
-//        Log.d("JOSH-METRICS","FRAME: " + buffersRendered + "," + curTime + "," + framesDropped + "," + allTimestamps);
+        Log.d("JOSH-METRICS","FRAME: " + buffersRendered + "," + curTime + "," + framesDropped + "," + allTimestamps);
         buffersRendered++;
 
 

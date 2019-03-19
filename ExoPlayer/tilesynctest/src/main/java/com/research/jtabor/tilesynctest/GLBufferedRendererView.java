@@ -16,6 +16,7 @@ public class GLBufferedRendererView extends GLSurfaceView {
         super(c);
         setEGLContextClientVersion(2);
         renderer = new BufferedRenderer();
+
         renderer.setContext(getContext());
         setRenderer(renderer);
     }

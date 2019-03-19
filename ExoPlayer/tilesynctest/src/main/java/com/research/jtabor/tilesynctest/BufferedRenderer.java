@@ -30,8 +30,10 @@ import exoaartest.research.josht.exoplayerlibrarytest.SurfaceTest;
 
 public class BufferedRenderer implements GLSurfaceView.Renderer {
 
-    int numberOfTiles = 5;
+    int numberOfTiles = 8;
     long loadTimestamp = 0l;
+
+    boolean waitingToStart = true;
 
     SurfaceTest st;
     Context context;
@@ -39,6 +41,9 @@ public class BufferedRenderer implements GLSurfaceView.Renderer {
     int frameWidth = 0;
     int frameHeight = 0;
     VrVideoSync videoSync;
+
+    long minimumFrameDifference = 0;
+    long lastRender = 0;
 
     private final String vertexShaderSource =
             "//VERTEX SHADER\n" +
@@ -238,12 +243,11 @@ static float baseTile[] =  {
         Looper.prepare();
         st = new SurfaceTest(numberOfTiles,context,1920,1080,true,false);
 //        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60-tiles.mpd");
-//        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60.mp4");
-        st.init("http://pages.cs.wisc.edu/~tabor/newV3a-tiles.mpd");
+        st.init("http://pages.cs.wisc.edu/~tabor/bunny_test_1080_60.mp4");
+//        st.init("http://pages.cs.wisc.edu/~tabor/newV3a-tiles.mpd");
         textureHandles = st.getTextureIds();
         st.initExoplayer();
         loadTimestamp = System.currentTimeMillis();
-        st.startVideo();
 
         glslProgram = GLES20.glCreateProgram();
         vertexShader = loadShader(GLES20.GL_VERTEX_SHADER,vertexShaderSource);
@@ -293,12 +297,7 @@ static float baseTile[] =  {
 
     @Override
     public void onDrawFrame(GL10 gl10) {
-//        if (System.currentTimeMillis() < loadTimestamp + HOLDOFF_MS_BEFORE_PLAY){
-//            return;
-//        }
-//        else{
-//            st.startVideo();
-//        }
+//        Log.d("DD","Start Draw Call");
         //display textures on screen.  Decide when to do it.
         st.updateTexture();
 
@@ -338,11 +337,31 @@ static float baseTile[] =  {
             checkErrors("12");
             videoSync.renderedToTexture(i);
         }
-
-        int bufferToRender = videoSync.getReadyBuffer();
-        if (bufferToRender < 0 ) {
+        long nanoTime = System.nanoTime();
+        if (nanoTime < lastRender + minimumFrameDifference){
             return;
         }
+        lastRender = nanoTime;
+
+        if (waitingToStart){
+            if(videoSync.areDecodersReadyToStart()){
+                st.startVideo();
+                waitingToStart = false;
+            }
+            else{
+                return;
+            }
+        }
+//        Log.d("DD","Start Screen Draw");
+        int bufferToRender = videoSync.getReadyBuffer();
+        if (bufferToRender < 0) {
+            return;
+        }
+////        Log.d("DD","Drawing Buffer: " + bufferToRender);
+//        if (bufferToRender == 1 || bufferToRender == 0){
+//            videoSync.bufferRendered(bufferToRender);
+//            return;
+//        }
         GLES20.glUseProgram(glslProgramOneTile);
         GLES20.glActiveTexture(textureUnits[0]);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTextures[bufferToRender]);
@@ -361,7 +380,7 @@ static float baseTile[] =  {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, allTiles[0].length / 3);
         checkErrors("a11");
         videoSync.bufferRendered(bufferToRender);
-
+//        Log.d("DD","Finish Draw Call");
     }
     private int loadShader(int type, String shaderSource){
         int shaderHandle = GLES20.glCreateShader(type);

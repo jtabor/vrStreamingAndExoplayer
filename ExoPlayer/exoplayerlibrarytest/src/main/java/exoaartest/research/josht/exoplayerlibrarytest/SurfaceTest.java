@@ -254,31 +254,31 @@ public class SurfaceTest implements TextureView.SurfaceTextureListener, SurfaceT
 //        Uri uri = Uri.parse("http://172.17.0.2/VIDEO_0065-tiles.mpd");
         //Uri uri = Uri.parse("https://storage.googleapis.com/video_vr/tiles-big/VIDEO_0065-tiles.mpd");
 //TODO: Make these all into 1 URL so that we can do the switching per tile.
-        DashMediaSource videoSource = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource2 = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource3 = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource4 = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource5 = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource6 = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource7 = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-        DashMediaSource videoSource8 = new DashMediaSource(uri, dataSourceFactory,
-                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
-
-//        ExtractorMediaSource videoSource = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
-//        ExtractorMediaSource videoSource2 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
-//        ExtractorMediaSource videoSource3 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
-//        ExtractorMediaSource videoSource4 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
-//        ExtractorMediaSource videoSource5 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
-//        ExtractorMediaSource videoSource6 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
-//        ExtractorMediaSource videoSource7 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
-//        ExtractorMediaSource videoSource8 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+//        DashMediaSource videoSource = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//        DashMediaSource videoSource2 = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//        DashMediaSource videoSource3 = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//        DashMediaSource videoSource4 = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//        DashMediaSource videoSource5 = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//        DashMediaSource videoSource6 = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//        DashMediaSource videoSource7 = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//        DashMediaSource videoSource8 = new DashMediaSource(uri, dataSourceFactory,
+//                new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+//
+        ExtractorMediaSource videoSource = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+        ExtractorMediaSource videoSource2 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+        ExtractorMediaSource videoSource3 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+        ExtractorMediaSource videoSource4 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+        ExtractorMediaSource videoSource5 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+        ExtractorMediaSource videoSource6 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+        ExtractorMediaSource videoSource7 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
+        ExtractorMediaSource videoSource8 = new ExtractorMediaSource(uri,dataSourceFactory,extractorsFactory,null,null);
 
 //        MediaSource videoSource = new DashMediaSource(uri,
 //                dataSourceFactory, extractorsFactory, null, null);
